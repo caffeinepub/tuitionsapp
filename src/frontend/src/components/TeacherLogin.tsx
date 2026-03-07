@@ -1,0 +1,97 @@
+import { Button } from "@/components/ui/button";
+import { BookOpen, Loader2, Shield } from "lucide-react";
+import { useEffect } from "react";
+import { toast } from "sonner";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import { AuthLayout } from "./AuthLayout";
+
+type Props = {
+  onBack: () => void;
+  onLoggedIn: () => void;
+};
+
+export function TeacherLogin({ onBack, onLoggedIn }: Props) {
+  const {
+    login,
+    isLoggingIn,
+    isLoginSuccess,
+    isInitializing,
+    isLoginError,
+    loginError,
+  } = useInternetIdentity();
+
+  useEffect(() => {
+    if (isLoginSuccess) {
+      toast.success("Welcome, Teacher!");
+      onLoggedIn();
+    }
+  }, [isLoginSuccess, onLoggedIn]);
+
+  useEffect(() => {
+    if (isLoginError && loginError) {
+      toast.error(loginError.message || "Login failed. Please try again.");
+    }
+  }, [isLoginError, loginError]);
+
+  return (
+    <AuthLayout onBack={onBack} roleLabel="Teacher" roleColor="teacher">
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-xl bg-teacher-light flex items-center justify-center">
+            <BookOpen className="w-5 h-5 text-teacher" />
+          </div>
+          <div>
+            <h1 className="font-display text-2xl font-bold text-foreground">
+              Teacher Login
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Access your teaching dashboard
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-5">
+        {/* Info box */}
+        <div className="bg-secondary/60 rounded-xl p-4 border border-border/40">
+          <div className="flex items-start gap-3">
+            <Shield className="w-5 h-5 text-teacher mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-foreground mb-1">
+                Secure Authentication
+              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Teacher accounts use Internet Identity for secure,
+                privacy-preserving authentication. No passwords to remember.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <Button
+          data-ocid="teacher.login.button"
+          onClick={login}
+          disabled={isLoggingIn || isInitializing}
+          className="w-full bg-teacher hover:bg-teacher/90 text-white font-semibold h-11 text-base gap-2"
+        >
+          {isLoggingIn || isInitializing ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {isInitializing ? "Initializing…" : "Authenticating…"}
+            </>
+          ) : (
+            <>
+              <Shield className="w-4 h-4" />
+              Login with Internet Identity
+            </>
+          )}
+        </Button>
+
+        <p className="text-xs text-center text-muted-foreground leading-relaxed">
+          Internet Identity provides secure, anonymous authentication on the
+          Internet Computer network.
+        </p>
+      </div>
+    </AuthLayout>
+  );
+}
