@@ -1,5 +1,15 @@
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -17,8 +27,11 @@ import {
   ClipboardList,
   Clock,
   KeyRound,
+  Phone,
+  Video,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import type { StudentUser } from "../App";
 import { getOrCreateVerificationCode } from "../utils/studentStorage";
 import { DashboardNav } from "./DashboardNav";
@@ -154,6 +167,50 @@ const statusConfig = {
   },
 };
 
+const teachers = [
+  {
+    id: 1,
+    name: "Mr. Robert Hayes",
+    subjects: ["Mathematics", "Further Mathematics"],
+    availability: "Available",
+  },
+  {
+    id: 2,
+    name: "Dr. Priya Sharma",
+    subjects: ["Physics", "Chemistry"],
+    availability: "Available",
+  },
+  {
+    id: 3,
+    name: "Ms. Claire Watson",
+    subjects: ["English Literature", "History"],
+    availability: "Busy",
+  },
+  {
+    id: 4,
+    name: "Mr. David Chen",
+    subjects: ["Chemistry", "Biology"],
+    availability: "Available",
+  },
+  {
+    id: 5,
+    name: "Mrs. Susan Patel",
+    subjects: ["Mathematics", "Biology"],
+    availability: "Offline",
+  },
+  {
+    id: 6,
+    name: "Mr. James Ford",
+    subjects: ["History", "English Literature"],
+    availability: "Busy",
+  },
+];
+
+type BookingState = {
+  teacher: (typeof teachers)[number];
+  callType: "Video" | "Audio";
+} | null;
+
 function StatusBadge({ status }: { status: string }) {
   const config =
     statusConfig[status as keyof typeof statusConfig] ?? statusConfig.pending;
@@ -173,6 +230,45 @@ export function StudentDashboard({ student, onLogout }: Props) {
     () => getOrCreateVerificationCode(student.username),
     [student.username],
   );
+
+  // Book a Call state
+  const [subjectSearch, setSubjectSearch] = useState("");
+  const [booking, setBooking] = useState<BookingState>(null);
+  const [bookingDate, setBookingDate] = useState("");
+  const [bookingTime, setBookingTime] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const filteredTeachers = useMemo(() => {
+    const q = subjectSearch.trim().toLowerCase();
+    if (!q) return teachers;
+    return teachers.filter((t) =>
+      t.subjects.some((s) => s.toLowerCase().includes(q)),
+    );
+  }, [subjectSearch]);
+
+  function openBookingDialog(
+    teacher: (typeof teachers)[number],
+    callType: "Video" | "Audio",
+  ) {
+    setBooking({ teacher, callType });
+    setBookingDate("");
+    setBookingTime("");
+    setDialogOpen(true);
+  }
+
+  function confirmBooking() {
+    if (!booking) return;
+    setDialogOpen(false);
+    toast.success(`Call booked with ${booking.teacher.name}!`);
+    setBooking(null);
+    setBookingDate("");
+    setBookingTime("");
+  }
+
+  function cancelBooking() {
+    setDialogOpen(false);
+    setBooking(null);
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -406,6 +502,166 @@ export function StudentDashboard({ student, onLogout }: Props) {
             </Table>
           </div>
         </section>
+
+        {/* Book a Call with a Teacher */}
+        <section className="mb-8">
+          <h2 className="font-display text-xl font-bold text-foreground mb-4">
+            Book a Call with a Teacher
+          </h2>
+
+          {/* Subject search */}
+          <div className="mb-5">
+            <Input
+              data-ocid="booking.search.input"
+              type="text"
+              placeholder="Search by subject (e.g. Mathematics)"
+              value={subjectSearch}
+              onChange={(e) => setSubjectSearch(e.target.value)}
+              className="max-w-md"
+            />
+          </div>
+
+          {/* Teacher cards */}
+          {filteredTeachers.length === 0 ? (
+            <div
+              data-ocid="booking.teachers.empty_state"
+              className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center text-muted-foreground text-sm"
+            >
+              No teachers found for that subject.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredTeachers.map((teacher, i) => {
+                const availColor =
+                  teacher.availability === "Available"
+                    ? "bg-green-100 text-green-700 border-green-200"
+                    : teacher.availability === "Busy"
+                      ? "bg-amber-100 text-amber-700 border-amber-200"
+                      : "bg-muted text-muted-foreground border-border";
+
+                return (
+                  <div
+                    key={teacher.id}
+                    data-ocid={`booking.teacher.item.${i + 1}`}
+                    className="card-lift bg-card rounded-xl border border-border/60 shadow-xs p-5 flex flex-col gap-3"
+                  >
+                    {/* Name + availability */}
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-semibold text-sm text-foreground leading-snug">
+                        {teacher.name}
+                      </p>
+                      <Badge
+                        variant="outline"
+                        className={`text-xs font-semibold border shrink-0 ${availColor}`}
+                      >
+                        {teacher.availability}
+                      </Badge>
+                    </div>
+
+                    {/* Subject pills */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {teacher.subjects.map((subj) => (
+                        <Badge
+                          key={subj}
+                          variant="secondary"
+                          className="text-xs bg-student-light text-student border-student/20"
+                        >
+                          {subj}
+                        </Badge>
+                      ))}
+                    </div>
+
+                    {/* Call buttons */}
+                    <div className="flex gap-2 mt-auto pt-1">
+                      <Button
+                        data-ocid={`booking.video.button.${i + 1}`}
+                        size="sm"
+                        className="flex-1 bg-student text-white hover:bg-student/90 gap-1.5"
+                        onClick={() => openBookingDialog(teacher, "Video")}
+                      >
+                        <Video className="w-3.5 h-3.5" />
+                        Video Call
+                      </Button>
+                      <Button
+                        data-ocid={`booking.audio.button.${i + 1}`}
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 gap-1.5"
+                        onClick={() => openBookingDialog(teacher, "Audio")}
+                      >
+                        <Phone className="w-3.5 h-3.5" />
+                        Audio Call
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* Booking Dialog */}
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent data-ocid="booking.dialog" className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Book a {booking?.callType ?? ""} Call</DialogTitle>
+            </DialogHeader>
+
+            {booking && (
+              <div className="space-y-4 py-2">
+                <p className="text-sm text-muted-foreground">
+                  You are booking a{" "}
+                  <span className="font-semibold text-foreground">
+                    {booking.callType} call
+                  </span>{" "}
+                  with{" "}
+                  <span className="font-semibold text-foreground">
+                    {booking.teacher.name}
+                  </span>
+                  .
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="booking-date">Date</Label>
+                  <Input
+                    data-ocid="booking.date.input"
+                    id="booking-date"
+                    type="date"
+                    value={bookingDate}
+                    onChange={(e) => setBookingDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="booking-time">Time</Label>
+                  <Input
+                    data-ocid="booking.time.input"
+                    id="booking-time"
+                    type="time"
+                    value={bookingTime}
+                    onChange={(e) => setBookingTime(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            <DialogFooter className="gap-2">
+              <Button
+                data-ocid="booking.cancel_button"
+                variant="outline"
+                onClick={cancelBooking}
+              >
+                Cancel
+              </Button>
+              <Button
+                data-ocid="booking.confirm_button"
+                className="bg-student text-white hover:bg-student/90"
+                onClick={confirmBooking}
+                disabled={!bookingDate || !bookingTime}
+              >
+                Confirm Booking
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
 
       <footer className="py-5 text-center text-sm text-muted-foreground border-t border-border/60">

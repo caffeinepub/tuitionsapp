@@ -18,6 +18,7 @@ export function TeacherLogin({ onBack, onLoggedIn }: Props) {
     isInitializing,
     isLoginError,
     loginError,
+    identity,
   } = useInternetIdentity();
 
   useEffect(() => {
@@ -27,11 +28,17 @@ export function TeacherLogin({ onBack, onLoggedIn }: Props) {
     }
   }, [isLoginSuccess, onLoggedIn]);
 
+  // If already authenticated, treat it as success instead of showing an error
   useEffect(() => {
     if (isLoginError && loginError) {
-      toast.error(loginError.message || "Login failed. Please try again.");
+      if (loginError.message === "User is already authenticated" && identity) {
+        toast.success("Welcome, Teacher!");
+        onLoggedIn();
+      } else {
+        toast.error(loginError.message || "Login failed. Please try again.");
+      }
     }
-  }, [isLoginError, loginError]);
+  }, [isLoginError, loginError, identity, onLoggedIn]);
 
   return (
     <AuthLayout onBack={onBack} roleLabel="Teacher" roleColor="teacher">
@@ -70,7 +77,15 @@ export function TeacherLogin({ onBack, onLoggedIn }: Props) {
 
         <Button
           data-ocid="teacher.login.button"
-          onClick={login}
+          onClick={() => {
+            // If already authenticated, skip re-login and proceed directly
+            if (identity && !identity.getPrincipal().isAnonymous()) {
+              toast.success("Welcome, Teacher!");
+              onLoggedIn();
+            } else {
+              login();
+            }
+          }}
           disabled={isLoggingIn || isInitializing}
           className="w-full bg-teacher hover:bg-teacher/90 text-white font-semibold h-11 text-base gap-2"
         >
