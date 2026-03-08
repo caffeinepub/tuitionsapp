@@ -9,12 +9,11 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { StudentUser } from "../App";
 import { saveStudentUser } from "../utils/studentStorage";
 import { AuthLayout } from "./AuthLayout";
 
 type Props = {
-  onRegistered: (student: StudentUser) => void;
+  onRegistered: () => void;
   onBack: () => void;
 };
 
@@ -50,11 +49,10 @@ export function StudentRegister({ onRegistered, onBack }: Props) {
         password,
       });
       if (result.success) {
-        toast.success("Account created! Welcome aboard 🎉");
-        onRegistered({
-          name: name.trim(),
-          username: username.trim().toLowerCase(),
-        });
+        toast.success(
+          "Account created! Please log in with your new credentials.",
+        );
+        onRegistered();
       } else {
         setError(result.message);
         setLoading(false);

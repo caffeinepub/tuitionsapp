@@ -22,7 +22,20 @@ export function getStudentUsers(): StoredStudent[] {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_STUDENTS));
       return DEFAULT_STUDENTS;
     }
-    return JSON.parse(raw) as StoredStudent[];
+    const stored = JSON.parse(raw) as StoredStudent[];
+    // Ensure default demo students are always present so parents can link them
+    const storedUsernames = new Set(
+      stored.map((u) => u.username.toLowerCase()),
+    );
+    const missing = DEFAULT_STUDENTS.filter(
+      (d) => !storedUsernames.has(d.username.toLowerCase()),
+    );
+    if (missing.length > 0) {
+      const merged = [...missing, ...stored];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      return merged;
+    }
+    return stored;
   } catch {
     return DEFAULT_STUDENTS;
   }
@@ -80,6 +93,24 @@ export function saveParentLink(principal: string, username: string): void {
   } catch {
     // ignore
   }
+}
+
+// ---- Password reset ----
+
+export function resetStudentPassword(
+  username: string,
+  newPassword: string,
+): { success: boolean; message: string } {
+  const users = getStudentUsers();
+  const idx = users.findIndex(
+    (u) => u.username.toLowerCase() === username.trim().toLowerCase(),
+  );
+  if (idx === -1) {
+    return { success: false, message: "No student found with that username." };
+  }
+  users[idx] = { ...users[idx], password: newPassword };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+  return { success: true, message: "Password reset successfully." };
 }
 
 // ---- Student CRUD ----

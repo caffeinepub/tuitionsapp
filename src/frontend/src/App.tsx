@@ -89,7 +89,7 @@ export default function App() {
       )}
       {view === "student-register" && (
         <StudentRegister
-          onRegistered={onStudentLogin}
+          onRegistered={() => navigate("student-login")}
           onBack={() => navigate("student-login")}
         />
       )}
