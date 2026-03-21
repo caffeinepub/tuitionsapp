@@ -16,8 +16,12 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Fraunces", "serif"],
-        sans: ["Outfit", "sans-serif"],
+        // Display / Logo — Fredoka One
+        display: ["'Fredoka One'", "cursive"],
+        // Heading — Nunito Bold
+        heading: ["Nunito", "sans-serif"],
+        // Body — Poppins
+        sans: ["Poppins", "sans-serif"],
       },
       colors: {
         border: "oklch(var(--border))",

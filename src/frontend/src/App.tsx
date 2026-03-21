@@ -1,5 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { useCallback, useState } from "react";
+import { AdminDashboard } from "./components/AdminDashboard";
+import { AdminLogin } from "./components/AdminLogin";
 import { LandingPage } from "./components/LandingPage";
 import { ParentDashboard } from "./components/ParentDashboard";
 import { ParentLinkStudent } from "./components/ParentLinkStudent";
@@ -9,6 +11,7 @@ import { StudentLogin } from "./components/StudentLogin";
 import { StudentRegister } from "./components/StudentRegister";
 import { TeacherDashboard } from "./components/TeacherDashboard";
 import { TeacherLogin } from "./components/TeacherLogin";
+import { adminLogout } from "./utils/adminStorage";
 import { getParentLink, getStudentUsers } from "./utils/studentStorage";
 
 export type AppView =
@@ -20,7 +23,9 @@ export type AppView =
   | "parent-link-student"
   | "student-dashboard"
   | "teacher-dashboard"
-  | "parent-dashboard";
+  | "parent-dashboard"
+  | "admin-login"
+  | "admin-dashboard";
 
 export type StudentUser = {
   name: string;
@@ -34,6 +39,8 @@ export default function App() {
   );
   const [parentPrincipal, setParentPrincipal] = useState<string>("");
   const [linkedStudentName, setLinkedStudentName] = useState<string>("");
+  const [linkedStudentUsername, setLinkedStudentUsername] =
+    useState<string>("");
 
   const navigate = useCallback((v: AppView) => setView(v), []);
 
@@ -58,6 +65,7 @@ export default function App() {
       );
       if (student) {
         setLinkedStudentName(student.name);
+        setLinkedStudentUsername(student.username);
         setView("parent-dashboard");
         return;
       }
@@ -68,9 +76,8 @@ export default function App() {
   const onStudentLinked = useCallback(
     (studentUsername: string, studentName: string) => {
       setLinkedStudentName(studentName);
+      setLinkedStudentUsername(studentUsername);
       setView("parent-dashboard");
-      // suppress unused warning
-      void studentUsername;
     },
     [],
   );
@@ -121,7 +128,22 @@ export default function App() {
       {view === "parent-dashboard" && (
         <ParentDashboard
           linkedStudentName={linkedStudentName}
+          linkedStudentUsername={linkedStudentUsername}
           onLogout={() => navigate("landing")}
+        />
+      )}
+      {view === "admin-login" && (
+        <AdminLogin
+          onLoggedIn={() => navigate("admin-dashboard")}
+          onBack={() => navigate("landing")}
+        />
+      )}
+      {view === "admin-dashboard" && (
+        <AdminDashboard
+          onLogout={() => {
+            adminLogout();
+            navigate("landing");
+          }}
         />
       )}
     </>

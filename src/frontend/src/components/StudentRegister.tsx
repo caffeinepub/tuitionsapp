@@ -1,12 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  AlertCircle,
-  CheckCircle2,
-  GraduationCap,
-  Loader2,
-} from "lucide-react";
+import { AlertCircle, GraduationCap, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { saveStudentUser } from "../utils/studentStorage";
@@ -76,15 +71,6 @@ export function StudentRegister({ onRegistered, onBack }: Props) {
             </p>
           </div>
         </div>
-      </div>
-
-      {/* Hint about demo accounts */}
-      <div className="flex items-start gap-2 bg-secondary/60 rounded-lg px-3 py-2.5 mb-5 text-sm text-muted-foreground">
-        <CheckCircle2 className="w-4 h-4 text-teacher mt-0.5 flex-shrink-0" />
-        <span>
-          Demo accounts: <strong>alex</strong>, <strong>maya</strong>, or{" "}
-          <strong>jordan</strong> — all with password <strong>pass123</strong>
-        </span>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">

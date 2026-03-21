@@ -3,10 +3,14 @@ import {
   ArrowRight,
   BookOpen,
   GraduationCap,
+  ShieldCheck,
   Sparkles,
+  Star,
   Users,
 } from "lucide-react";
+import { useState } from "react";
 import type { AppView } from "../App";
+import { type Review, getReviews } from "../utils/reviewStorage";
 
 type Props = {
   onNavigate: (view: AppView) => void;
@@ -57,7 +61,20 @@ const roles = [
   },
 ] as const;
 
+function relativeDate(ts: number): string {
+  const diff = Date.now() - ts;
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 30) return `${days} days ago`;
+  const months = Math.floor(days / 30);
+  if (months === 1) return "1 month ago";
+  return `${months} months ago`;
+}
+
 export function LandingPage({ onNavigate }: Props) {
+  const [reviews] = useState<Review[]>(() => getReviews());
+
   return (
     <div className="min-h-screen landing-bg flex flex-col">
       {/* Header */}
@@ -70,9 +87,21 @@ export function LandingPage({ onNavigate }: Props) {
             TuitionsApp
           </span>
         </div>
-        <span className="text-sm text-muted-foreground font-sans hidden sm:block">
-          Your all-in-one learning platform
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground font-sans hidden sm:block">
+            Your all-in-one learning platform
+          </span>
+          <Button
+            data-ocid="landing.admin.button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onNavigate("admin-login")}
+            className="gap-1.5 text-muted-foreground hover:text-foreground text-xs"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Admin
+          </Button>
+        </div>
       </header>
 
       {/* Hero */}
@@ -121,6 +150,55 @@ export function LandingPage({ onNavigate }: Props) {
             />
           ))}
         </div>
+
+        {/* Parent Reviews */}
+        {reviews.length > 0 && (
+          <section
+            data-ocid="landing.reviews.section"
+            className="w-full max-w-5xl mt-16"
+          >
+            <h2 className="font-display text-2xl font-bold text-foreground text-center mb-2">
+              What Parents Say
+            </h2>
+            <p className="text-muted-foreground text-sm text-center mb-8">
+              Real experiences from parents in our community
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {reviews.map((review, i) => (
+                <div
+                  key={review.id}
+                  data-ocid={`landing.reviews.item.${i + 1}`}
+                  className="bg-card border border-border/60 rounded-2xl shadow-card p-5 flex flex-col gap-3"
+                >
+                  {/* Stars */}
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className="w-4 h-4"
+                        fill={star <= review.rating ? "#f59e0b" : "transparent"}
+                        stroke={star <= review.rating ? "#f59e0b" : "#d1d5db"}
+                      />
+                    ))}
+                  </div>
+                  {/* Text */}
+                  <p className="text-sm text-foreground leading-relaxed flex-1">
+                    "{review.reviewText}"
+                  </p>
+                  {/* Footer */}
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-xs font-semibold text-parent">
+                      {review.parentName}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {relativeDate(review.createdAt)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
 
       {/* Footer */}
@@ -166,9 +244,7 @@ function RoleCard({
         </div>
 
         {/* Content */}
-        <h2 className="font-display text-xl font-bold text-foreground mb-2">
-          {role.label}
-        </h2>
+        <h2 className="text-xl font-bold text-foreground mb-2">{role.label}</h2>
         <p className="text-muted-foreground text-sm leading-relaxed flex-1 mb-5">
           {role.description}
         </p>

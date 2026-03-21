@@ -7,44 +7,44 @@
     --radius: 0.75rem;
 
     /* Core palette — Deep navy + warm cream */
-    --background:     0.97 0.008 85;
-    --foreground:     0.18 0.03 260;
+    --background: 0.97 0.008 85;
+    --foreground: 0.18 0.03 260;
 
-    --card:           0.995 0.004 80;
+    --card: 0.995 0.004 80;
     --card-foreground: 0.18 0.03 260;
 
-    --popover:        0.995 0.004 80;
+    --popover: 0.995 0.004 80;
     --popover-foreground: 0.18 0.03 260;
 
     /* Primary — deep navy */
-    --primary:        0.28 0.065 260;
+    --primary: 0.28 0.065 260;
     --primary-foreground: 0.98 0.005 85;
 
     /* Secondary — light navy tint */
-    --secondary:      0.92 0.018 250;
+    --secondary: 0.92 0.018 250;
     --secondary-foreground: 0.28 0.065 260;
 
-    --muted:          0.93 0.012 260;
+    --muted: 0.93 0.012 260;
     --muted-foreground: 0.52 0.025 260;
 
     /* Accent — warm coral */
-    --accent:         0.7 0.16 28;
+    --accent: 0.7 0.16 28;
     --accent-foreground: 0.98 0.005 85;
 
-    --destructive:    0.577 0.245 27.325;
+    --destructive: 0.577 0.245 27.325;
     --destructive-foreground: 0.985 0 0;
 
-    --border:         0.88 0.016 250;
-    --input:          0.88 0.016 250;
-    --ring:           0.55 0.05 260;
+    --border: 0.88 0.016 250;
+    --input: 0.88 0.016 250;
+    --ring: 0.55 0.05 260;
 
     /* Role colors */
-    --student:        0.67 0.19 28;
-    --student-light:  0.95 0.05 28;
-    --teacher:        0.62 0.15 155;
-    --teacher-light:  0.94 0.05 155;
-    --parent:         0.75 0.16 75;
-    --parent-light:   0.96 0.05 75;
+    --student: 0.67 0.19 28;
+    --student-light: 0.95 0.05 28;
+    --teacher: 0.62 0.15 155;
+    --teacher-light: 0.94 0.05 155;
+    --parent: 0.75 0.16 75;
+    --parent-light: 0.96 0.05 75;
 
     /* Chart tokens */
     --chart-1: 0.646 0.222 41.116;
@@ -75,13 +75,19 @@
   }
 
   /* Section headings, card titles, nav items — Nunito Bold */
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: "Nunito", sans-serif;
     font-weight: 700;
   }
 
   /* Buttons and badges — Nunito ExtraBold 800 */
-  button, .badge {
+  button,
+  .badge {
     font-family: "Nunito", sans-serif;
     font-weight: 800;
   }
@@ -95,22 +101,44 @@
 
 /* Landing gradient mesh */
 .landing-bg {
-  background:
-    radial-gradient(ellipse at 10% 20%, oklch(0.72 0.14 28 / 0.18) 0%, transparent 50%),
-    radial-gradient(ellipse at 85% 10%, oklch(0.62 0.15 155 / 0.14) 0%, transparent 50%),
-    radial-gradient(ellipse at 60% 85%, oklch(0.75 0.16 75 / 0.14) 0%, transparent 50%),
-    oklch(0.97 0.008 85);
+  background: radial-gradient(
+      ellipse at 10% 20%,
+      oklch(0.72 0.14 28 / 0.18) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse at 85% 10%,
+      oklch(0.62 0.15 155 / 0.14) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse at 60% 85%,
+      oklch(0.75 0.16 75 / 0.14) 0%,
+      transparent 50%
+    ), oklch(0.97 0.008 85);
 }
 
 /* Dashboard gradient header */
 .dashboard-header-student {
-  background: linear-gradient(135deg, oklch(0.28 0.065 260) 0%, oklch(0.67 0.19 28 / 0.85) 100%);
+  background: linear-gradient(
+    135deg,
+    oklch(0.28 0.065 260) 0%,
+    oklch(0.67 0.19 28 / 0.85) 100%
+  );
 }
 .dashboard-header-teacher {
-  background: linear-gradient(135deg, oklch(0.28 0.065 260) 0%, oklch(0.62 0.15 155 / 0.85) 100%);
+  background: linear-gradient(
+    135deg,
+    oklch(0.28 0.065 260) 0%,
+    oklch(0.62 0.15 155 / 0.85) 100%
+  );
 }
 .dashboard-header-parent {
-  background: linear-gradient(135deg, oklch(0.28 0.065 260) 0%, oklch(0.75 0.16 75 / 0.85) 100%);
+  background: linear-gradient(
+    135deg,
+    oklch(0.28 0.065 260) 0%,
+    oklch(0.75 0.16 75 / 0.85) 100%
+  );
 }
 
 /* Card hover lift */

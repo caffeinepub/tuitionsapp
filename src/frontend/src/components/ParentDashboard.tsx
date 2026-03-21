@@ -1,132 +1,165 @@
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
+  Award,
+  BarChart3,
   BookOpen,
   Calendar,
   CheckCircle2,
-  Clock,
+  ClipboardList,
+  GraduationCap,
+  MessageSquare,
   Star,
-  TrendingUp,
+  User,
+  Video,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import {
+  type CallBooking,
+  type Grade,
+  getBookingsForStudent,
+  getGradesForStudent,
+  getUnreadCount,
+  markChatRead,
+} from "../utils/assignmentStorage";
+import { addReview } from "../utils/reviewStorage";
+import {
+  type TeacherProfile,
+  getTeacherProfileByName,
+} from "../utils/teacherProfileStorage";
+import { ChatWindow } from "./ChatWindow";
 import { DashboardNav } from "./DashboardNav";
 
 type Props = {
   onLogout: () => void;
   linkedStudentName?: string;
+  linkedStudentUsername?: string;
 };
 
-const DEFAULT_CHILD = {
-  id: 1,
-  name: "Emma Johnson",
-  year: "Year 11",
-  overallGrade: 88,
-  attendance: 94,
-  subjects: 5,
-  color: "text-student",
-  bg: "bg-student-light",
-};
+export function ParentDashboard({
+  onLogout,
+  linkedStudentName,
+  linkedStudentUsername,
+}: Props) {
+  const childName = linkedStudentName || "your child";
 
-const upcomingSessions = [
-  {
-    id: 1,
-    subject: "Advanced Mathematics",
-    teacher: "Mr. Robert Hayes",
-    date: "Mon, 10 Mar",
-    time: "4:00 PM",
-    type: "Tutorial",
-  },
-  {
-    id: 2,
-    subject: "Physics",
-    teacher: "Dr. Priya Sharma",
-    date: "Tue, 11 Mar",
-    time: "3:30 PM",
-    type: "Lab Session",
-  },
-  {
-    id: 3,
-    subject: "English Literature",
-    teacher: "Ms. Claire Watson",
-    date: "Wed, 12 Mar",
-    time: "5:00 PM",
-    type: "Essay Review",
-  },
-  {
-    id: 4,
-    subject: "Chemistry",
-    teacher: "Mr. David Chen",
-    date: "Thu, 13 Mar",
-    time: "4:30 PM",
-    type: "Tutorial",
-  },
-];
+  const [grades, setGrades] = useState<Grade[]>(() =>
+    linkedStudentUsername ? getGradesForStudent(linkedStudentUsername) : [],
+  );
 
-const recentGrades = [
-  {
-    id: 1,
-    subject: "Mathematics",
-    assignment: "Integration Techniques",
-    score: "92/100",
-    grade: "A",
-    trend: "up",
-  },
-  {
-    id: 2,
-    subject: "Physics",
-    assignment: "Wave Motion Analysis",
-    score: "85/100",
-    grade: "B+",
-    trend: "stable",
-  },
-  {
-    id: 3,
-    subject: "English Lit.",
-    assignment: "Macbeth Character Study",
-    score: "88/100",
-    grade: "A-",
-    trend: "up",
-  },
-  {
-    id: 4,
-    subject: "Chemistry",
-    assignment: "Acid-Base Titration",
-    score: "78/100",
-    grade: "B",
-    trend: "down",
-  },
-  {
-    id: 5,
-    subject: "Mathematics",
-    assignment: "Calculus Fundamentals",
-    score: "95/100",
-    grade: "A+",
-    trend: "up",
-  },
-];
+  const [bookings, setBookings] = useState<CallBooking[]>(() =>
+    linkedStudentUsername ? getBookingsForStudent(linkedStudentUsername) : [],
+  );
 
-const gradeColors: Record<string, string> = {
-  "A+": "text-teacher font-bold",
-  A: "text-teacher font-bold",
-  "A-": "text-teacher",
-  "B+": "text-primary font-medium",
-  B: "text-primary",
-  "B-": "text-parent",
-  C: "text-muted-foreground",
-};
+  // Active chat window state
+  const [activeChatBookingId, setActiveChatBookingId] = useState<string | null>(
+    null,
+  );
+  const [activeChatLabel, setActiveChatLabel] = useState("");
 
-export function ParentDashboard({ onLogout, linkedStudentName }: Props) {
-  const child = linkedStudentName
-    ? { ...DEFAULT_CHILD, name: linkedStudentName }
-    : DEFAULT_CHILD;
+  // Unread counts per booking id
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+
+  // Review form state
+  const [rating, setRating] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [hoveredStar, setHoveredStar] = useState(0);
+
+  // Teacher profile modal state
+  const [viewingTeacherProfile, setViewingTeacherProfile] =
+    useState<TeacherProfile | null>(null);
+  const [viewingTeacherName, setViewingTeacherName] = useState<string>("");
+
+  const parentSenderName = linkedStudentName
+    ? `Parent of ${linkedStudentName}`
+    : "Parent";
+
+  // Refresh grades and bookings every 5s
+  useEffect(() => {
+    if (!linkedStudentUsername) return;
+    function refresh() {
+      setGrades(getGradesForStudent(linkedStudentUsername!));
+      setBookings(getBookingsForStudent(linkedStudentUsername!));
+    }
+    window.addEventListener("focus", refresh);
+    const interval = setInterval(refresh, 5000);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      clearInterval(interval);
+    };
+  }, [linkedStudentUsername]);
+
+  // Poll unread counts every 3s
+  useEffect(() => {
+    function refreshUnread() {
+      const counts: Record<string, number> = {};
+      for (const b of bookings) {
+        counts[b.id] = getUnreadCount(b.id, "parent");
+      }
+      setUnreadCounts(counts);
+    }
+    refreshUnread();
+    const interval = setInterval(refreshUnread, 3000);
+    return () => clearInterval(interval);
+  }, [bookings]);
+
+  function openChat(b: CallBooking) {
+    markChatRead(b.id, "parent");
+    setUnreadCounts((prev) => ({ ...prev, [b.id]: 0 }));
+    setActiveChatBookingId(b.id);
+    setActiveChatLabel(`${b.teacherName} — ${b.assignmentTitle}`);
+  }
+
+  function openTeacherProfile(teacherName: string) {
+    const profile = getTeacherProfileByName(teacherName);
+    setViewingTeacherName(teacherName);
+    setViewingTeacherProfile(profile);
+  }
+
+  function handleSubmitReview() {
+    if (rating === 0 || reviewText.trim() === "") return;
+    const parentName = linkedStudentName
+      ? `Parent of ${linkedStudentName}`
+      : "A Parent";
+    addReview({
+      parentName,
+      studentName: linkedStudentName || "",
+      reviewText: reviewText.trim(),
+      rating,
+    });
+    toast.success("Review submitted! Thank you.");
+    setRating(0);
+    setReviewText("");
+  }
+
+  // Compute average grade (numeric grades only)
+  const avgGrade = (() => {
+    const numeric = grades
+      .map((g) => Number.parseFloat(g.grade))
+      .filter((n) => !Number.isNaN(n));
+    if (numeric.length === 0) return null;
+    return (numeric.reduce((a, b) => a + b, 0) / numeric.length).toFixed(1);
+  })();
+
+  // Unique subjects from grades
+  const subjects = Array.from(new Set(grades.map((g) => g.subject)));
+
+  // Profile has meaningful content
+  const profileHasContent =
+    viewingTeacherProfile &&
+    (viewingTeacherProfile.profilePicture ||
+      (viewingTeacherProfile.awards &&
+        viewingTeacherProfile.awards.length > 0) ||
+      viewingTeacherProfile.hasTeachedBefore !== undefined);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -140,10 +173,10 @@ export function ParentDashboard({ onLogout, linkedStudentName }: Props) {
       <div className="dashboard-header-parent px-4 sm:px-6 pb-8">
         <div className="max-w-6xl mx-auto">
           <h1 className="font-display text-3xl font-bold text-white mb-1">
-            Welcome back! 👨‍👩‍👧
+            Welcome back! 👋
           </h1>
           <p className="text-white/70 text-sm">
-            Here's a summary of {child.name}'s progress.
+            Staying informed about {childName}'s academic progress.
           </p>
         </div>
       </div>
@@ -164,57 +197,33 @@ export function ParentDashboard({ onLogout, linkedStudentName }: Props) {
                   </div>
                   <div>
                     <p className="font-display font-bold text-xl text-foreground">
-                      {child.name}
+                      {childName}
                     </p>
-                    <Badge
-                      variant="outline"
-                      className="text-xs bg-secondary border-border/60 text-muted-foreground mt-1"
-                    >
-                      {child.year} · {child.subjects} Subjects
-                    </Badge>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Linked student account
+                    </p>
                   </div>
                 </div>
 
-                {/* Progress metrics */}
+                {/* Metrics from real data */}
                 <div className="flex-1 grid grid-cols-2 gap-4 sm:gap-6">
                   <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs text-muted-foreground font-medium">
-                        Overall Grade
-                      </span>
-                      <span className="text-sm font-bold text-teacher">
-                        {child.overallGrade}%
-                      </span>
-                    </div>
-                    <Progress
-                      value={child.overallGrade}
-                      className="h-2 bg-teacher-light"
-                    />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs text-muted-foreground font-medium">
-                        Attendance
-                      </span>
-                      <span className="text-sm font-bold text-parent">
-                        {child.attendance}%
-                      </span>
-                    </div>
-                    <Progress
-                      value={child.attendance}
-                      className="h-2 bg-parent-light"
-                    />
-                  </div>
-                </div>
-
-                {/* Star badge */}
-                <div className="flex items-center gap-2 bg-parent-light rounded-xl px-4 py-3 self-start sm:self-center">
-                  <Star className="w-5 h-5 text-parent fill-parent" />
-                  <div>
-                    <p className="text-xs text-parent font-medium">
-                      Performance
+                    <p className="text-xs text-muted-foreground font-medium mb-1">
+                      Overall Grade
                     </p>
-                    <p className="text-sm font-bold text-parent">Excellent</p>
+                    <p className="text-sm font-bold text-teacher">
+                      {avgGrade !== null ? avgGrade : "— (not yet available)"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium mb-1">
+                      Grades Received
+                    </p>
+                    <p className="text-sm font-bold text-parent">
+                      {grades.length > 0
+                        ? grades.length
+                        : "— (not yet available)"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -227,117 +236,364 @@ export function ParentDashboard({ onLogout, linkedStudentName }: Props) {
           <StatCard
             icon={BookOpen}
             label="Subjects"
-            value={String(child.subjects)}
+            value={subjects.length > 0 ? String(subjects.length) : "—"}
             color="text-teacher"
             bg="bg-teacher-light"
           />
           <StatCard
-            icon={TrendingUp}
+            icon={BarChart3}
             label="Avg. Grade"
-            value={`${child.overallGrade}%`}
+            value={avgGrade !== null ? avgGrade : "—"}
             color="text-parent"
             bg="bg-parent-light"
           />
           <StatCard
             icon={CheckCircle2}
-            label="Attendance"
-            value={`${child.attendance}%`}
+            label="Grades Received"
+            value={grades.length > 0 ? String(grades.length) : "—"}
             color="text-student"
             bg="bg-student-light"
           />
         </div>
 
-        {/* Upcoming Sessions */}
+        {/* Booked Sessions */}
         <section className="mb-8">
           <h2 className="font-display text-xl font-bold text-foreground mb-4">
-            Upcoming Sessions
+            Booked Sessions
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {upcomingSessions.map((s, i) => (
-              <div
-                key={s.id}
-                data-ocid={`dashboard.sessions.item.${i + 1}`}
-                className="card-lift bg-card rounded-xl border border-border/60 shadow-xs p-4 flex items-center gap-4"
-              >
-                <div className="w-10 h-10 rounded-xl bg-parent-light flex items-center justify-center flex-shrink-0">
-                  <Calendar className="w-5 h-5 text-parent" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-foreground truncate">
-                    {s.subject}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{s.teacher}</p>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="text-xs font-medium text-foreground">
-                    {s.date}
-                  </p>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground justify-end mt-0.5">
-                    <Clock className="w-3 h-3" />
-                    {s.time}
+          {bookings.length === 0 ? (
+            <div
+              data-ocid="dashboard.sessions.empty_state"
+              className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
+            >
+              <Calendar className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+              <p className="text-sm font-medium text-muted-foreground">
+                No sessions booked yet.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Sessions booked by {childName} will appear here.
+              </p>
+            </div>
+          ) : (
+            <div
+              data-ocid="dashboard.sessions.list"
+              className="bg-card rounded-xl border border-border/60 shadow-xs divide-y divide-border/60"
+            >
+              {bookings.map((b, i) => (
+                <div
+                  key={b.id}
+                  data-ocid={`dashboard.sessions.item.${i + 1}`}
+                  className="flex items-center justify-between px-4 py-3.5 gap-4"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-parent-light flex items-center justify-center flex-shrink-0">
+                      <Video className="w-3.5 h-3.5 text-parent" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {b.assignmentTitle}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {b.teacherName} &middot; {b.subject} &middot; {b.date}{" "}
+                        at {b.time}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+                    <Badge
+                      variant="outline"
+                      className={`text-xs ${
+                        b.status === "completed"
+                          ? "bg-green-50 text-green-700 border-green-200"
+                          : "bg-amber-50 text-amber-700 border-amber-200"
+                      }`}
+                    >
+                      {b.status === "completed" ? "Graded" : "Pending"}
+                    </Badge>
+                    <Button
+                      data-ocid="parent.teacher_profile.open_modal_button"
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 text-xs border-parent/30 text-parent hover:bg-parent-light"
+                      onClick={() => openTeacherProfile(b.teacherName)}
+                    >
+                      <User className="w-3.5 h-3.5" />
+                      Teacher Profile
+                    </Button>
+                    <Button
+                      data-ocid={`dashboard.sessions.messages.button.${i + 1}`}
+                      size="sm"
+                      variant="outline"
+                      className="relative gap-1.5 text-xs"
+                      onClick={() => openChat(b)}
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      Messages
+                      {(unreadCounts[b.id] ?? 0) > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                          {unreadCounts[b.id]}
+                        </span>
+                      )}
+                    </Button>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
 
-        {/* Recent Grades */}
+        {/* Grades section */}
         <section className="mb-8">
           <h2 className="font-display text-xl font-bold text-foreground mb-4">
-            Recent Grades
+            Grades &amp; Feedback
           </h2>
-          <div
-            data-ocid="dashboard.grades.table"
-            className="bg-card rounded-xl border border-border/60 shadow-xs overflow-hidden"
-          >
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/40">
-                  <TableHead className="font-semibold text-foreground">
-                    Subject
-                  </TableHead>
-                  <TableHead className="font-semibold text-foreground">
-                    Assignment
-                  </TableHead>
-                  <TableHead className="font-semibold text-foreground text-center">
-                    Score
-                  </TableHead>
-                  <TableHead className="font-semibold text-foreground text-center hidden sm:table-cell">
-                    Grade
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentGrades.map((g, i) => (
-                  <TableRow
-                    key={g.id}
-                    data-ocid={`dashboard.grades.row.${i + 1}`}
-                    className="hover:bg-muted/30 transition-colors"
-                  >
-                    <TableCell className="text-sm font-medium">
-                      {g.subject}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {g.assignment}
-                    </TableCell>
-                    <TableCell className="text-center text-sm">
-                      {g.score}
-                    </TableCell>
-                    <TableCell className="text-center hidden sm:table-cell">
-                      <span
-                        className={`text-sm ${gradeColors[g.grade] ?? "text-foreground"}`}
-                      >
-                        {g.grade}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          {grades.length === 0 ? (
+            <div
+              data-ocid="dashboard.grades.empty_state"
+              className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
+            >
+              <GraduationCap className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+              <p className="text-sm font-medium text-muted-foreground">
+                No grades yet.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Grades will appear here once the teacher assigns them.
+              </p>
+            </div>
+          ) : (
+            <div
+              data-ocid="dashboard.grades.list"
+              className="bg-card rounded-xl border border-border/60 shadow-xs divide-y divide-border/60"
+            >
+              {grades.map((g, i) => (
+                <div
+                  key={g.id}
+                  data-ocid={`dashboard.grades.item.${i + 1}`}
+                  className="flex items-center justify-between px-4 py-3.5 gap-4"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-teacher-light flex items-center justify-center flex-shrink-0">
+                      <ClipboardList className="w-3.5 h-3.5 text-teacher" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {g.assignmentTitle}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {g.subject}
+                        {g.feedback ? ` — ${g.feedback}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0 text-right">
+                    <p className="font-display text-xl font-bold text-teacher">
+                      {g.grade}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Write a Review */}
+        <section className="mb-8">
+          <h2 className="font-display text-xl font-bold text-foreground mb-4">
+            Write a Review
+          </h2>
+          <Card className="border-border/60 shadow-xs">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold text-foreground">
+                Share your experience with TuitionsApp
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Star rating */}
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Your rating
+                </p>
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      data-ocid={`review.star.toggle.${star}`}
+                      className="p-0.5 transition-transform hover:scale-110 focus:outline-none"
+                      onClick={() => setRating(star)}
+                      onMouseEnter={() => setHoveredStar(star)}
+                      onMouseLeave={() => setHoveredStar(0)}
+                      aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
+                    >
+                      <Star
+                        className="w-7 h-7"
+                        fill={
+                          star <= (hoveredStar || rating)
+                            ? "#f59e0b"
+                            : "transparent"
+                        }
+                        stroke={
+                          star <= (hoveredStar || rating)
+                            ? "#f59e0b"
+                            : "currentColor"
+                        }
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Review text */}
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Your review
+                </p>
+                <Textarea
+                  data-ocid="review.textarea"
+                  placeholder="Tell us about your experience as a parent on TuitionsApp..."
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
+                  className="min-h-[100px] resize-none"
+                />
+              </div>
+
+              <Button
+                data-ocid="review.submit_button"
+                onClick={handleSubmitReview}
+                disabled={rating === 0 || reviewText.trim() === ""}
+                className="bg-parent hover:bg-parent/90 text-white font-semibold"
+              >
+                Submit Review
+              </Button>
+            </CardContent>
+          </Card>
         </section>
       </main>
+
+      {/* Teacher Profile Modal */}
+      <Dialog
+        open={viewingTeacherProfile !== null || viewingTeacherName !== ""}
+        onOpenChange={(open) => {
+          if (!open) {
+            setViewingTeacherProfile(null);
+            setViewingTeacherName("");
+          }
+        }}
+      >
+        <DialogContent
+          data-ocid="parent.teacher_profile.modal"
+          className="sm:max-w-md"
+        >
+          <DialogHeader>
+            <DialogTitle className="font-display flex items-center gap-2">
+              <User className="w-5 h-5 text-parent" />
+              {viewingTeacherName || "Teacher"}'s Profile
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5 py-2">
+            {!profileHasContent ? (
+              <div className="flex flex-col items-center py-6 gap-3 text-center">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+                  <User className="w-7 h-7 text-muted-foreground opacity-50" />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  No profile information available yet.
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Profile picture */}
+                {viewingTeacherProfile?.profilePicture && (
+                  <div className="flex justify-center">
+                    <img
+                      src={viewingTeacherProfile.profilePicture}
+                      alt={`${viewingTeacherName}'s profile`}
+                      className="w-24 h-24 rounded-full object-cover border-4 border-parent/20"
+                    />
+                  </div>
+                )}
+
+                {/* Has taught before */}
+                {viewingTeacherProfile?.hasTeachedBefore !== undefined && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      Has taught before:
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className={
+                        viewingTeacherProfile.hasTeachedBefore
+                          ? "bg-green-50 text-green-700 border-green-200"
+                          : "bg-amber-50 text-amber-700 border-amber-200"
+                      }
+                    >
+                      {viewingTeacherProfile.hasTeachedBefore ? "Yes" : "No"}
+                    </Badge>
+                  </div>
+                )}
+
+                {/* Awards */}
+                {viewingTeacherProfile?.awards &&
+                  viewingTeacherProfile.awards.length > 0 && (
+                    <div>
+                      <p className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                        <Award className="w-4 h-4 text-parent" />
+                        Awards &amp; Achievements
+                      </p>
+                      <div className="space-y-2">
+                        {viewingTeacherProfile.awards.map((aw) => (
+                          <div
+                            key={aw.id}
+                            className="bg-muted/40 rounded-lg px-3 py-2.5"
+                          >
+                            <p className="text-sm font-medium text-foreground">
+                              {aw.title}
+                              {aw.year && (
+                                <span className="ml-1.5 text-xs text-muted-foreground font-normal">
+                                  ({aw.year})
+                                </span>
+                              )}
+                            </p>
+                            {aw.description && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {aw.description}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+              </>
+            )}
+          </div>
+
+          <div className="flex justify-end">
+            <Button
+              data-ocid="parent.teacher_profile.close_button"
+              variant="outline"
+              onClick={() => {
+                setViewingTeacherProfile(null);
+                setViewingTeacherName("");
+              }}
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Active Chat Window */}
+      {activeChatBookingId && (
+        <ChatWindow
+          bookingId={activeChatBookingId}
+          bookingLabel={activeChatLabel}
+          senderRole="parent"
+          senderName={parentSenderName}
+          onClose={() => setActiveChatBookingId(null)}
+        />
+      )}
 
       <footer className="py-5 text-center text-sm text-muted-foreground border-t border-border/60">
         © {new Date().getFullYear()}. Built with love using{" "}

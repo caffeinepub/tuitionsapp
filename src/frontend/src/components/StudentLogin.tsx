@@ -5,7 +5,11 @@ import { AlertCircle, GraduationCap, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { StudentUser } from "../App";
-import { getStudentUsers, resetStudentPassword } from "../utils/studentStorage";
+import {
+  getStudentUsers,
+  isStudentBanned,
+  resetStudentPassword,
+} from "../utils/studentStorage";
 import { AuthLayout } from "./AuthLayout";
 
 type Props = {
@@ -51,6 +55,11 @@ export function StudentLogin({ onLogin, onRegister, onBack }: Props) {
       );
 
       if (user) {
+        if (isStudentBanned(user.username)) {
+          setError("Your account has been banned. Please contact support.");
+          setLoading(false);
+          return;
+        }
         toast.success(`Welcome back, ${user.name}!`);
         onLogin({ name: user.name, username: user.username });
       } else {

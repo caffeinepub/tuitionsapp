@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -11,263 +11,166 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  AlertCircle,
   BarChart3,
   BookOpen,
-  Calendar,
-  CheckCircle2,
+  CalendarClock,
+  CheckCircle,
+  ClipboardCheck,
   ClipboardList,
-  Clock,
+  GraduationCap,
   KeyRound,
-  Phone,
+  MessageSquare,
   Video,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { StudentUser } from "../App";
+import {
+  type Assignment,
+  type CallBooking,
+  getAssignments,
+  getBookingsForStudent,
+  getGradesForStudent,
+  getUnreadCount,
+  markChatRead,
+  saveCallBooking,
+} from "../utils/assignmentStorage";
+import {
+  type Quiz,
+  type QuizAssignment,
+  getAssignedQuizzesForStudent,
+  getAttemptsUsed,
+} from "../utils/quizStorage";
 import { getOrCreateVerificationCode } from "../utils/studentStorage";
+import { AiDoubtBot } from "./AiDoubtBot";
+import { ChatWindow } from "./ChatWindow";
 import { DashboardNav } from "./DashboardNav";
+import { QuizTaker } from "./QuizTaker";
 
 type Props = {
   student: StudentUser;
   onLogout: () => void;
 };
 
-const subjects = [
-  {
-    id: 1,
-    name: "Advanced Mathematics",
-    teacher: "Mr. Robert Hayes",
-    next: "Mon, 10 Mar · 4:00 PM",
-    color: "bg-student-light",
-    dot: "bg-student",
-  },
-  {
-    id: 2,
-    name: "Physics",
-    teacher: "Dr. Priya Sharma",
-    next: "Tue, 11 Mar · 3:30 PM",
-    color: "bg-teacher-light",
-    dot: "bg-teacher",
-  },
-  {
-    id: 3,
-    name: "English Literature",
-    teacher: "Ms. Claire Watson",
-    next: "Wed, 12 Mar · 5:00 PM",
-    color: "bg-parent-light",
-    dot: "bg-parent",
-  },
-  {
-    id: 4,
-    name: "Chemistry",
-    teacher: "Mr. David Chen",
-    next: "Thu, 13 Mar · 4:30 PM",
-    color: "bg-secondary",
-    dot: "bg-primary",
-  },
-];
-
-const assignments = [
-  {
-    id: 1,
-    title: "Quadratic Equations Practice Set",
-    subject: "Mathematics",
-    due: "10 Mar 2026",
-    status: "pending",
-  },
-  {
-    id: 2,
-    title: "Newton's Laws Lab Report",
-    subject: "Physics",
-    due: "12 Mar 2026",
-    status: "submitted",
-  },
-  {
-    id: 3,
-    title: "Hamlet Essay — Act III Analysis",
-    subject: "English Lit.",
-    due: "14 Mar 2026",
-    status: "pending",
-  },
-  {
-    id: 4,
-    title: "Periodic Table Element Study",
-    subject: "Chemistry",
-    due: "8 Mar 2026",
-    status: "overdue",
-  },
-  {
-    id: 5,
-    title: "Trigonometry Problem Sheet",
-    subject: "Mathematics",
-    due: "18 Mar 2026",
-    status: "pending",
-  },
-];
-
-const grades = [
-  {
-    id: 1,
-    assignment: "Integration Techniques",
-    subject: "Mathematics",
-    score: "92/100",
-    feedback: "Excellent working shown.",
-  },
-  {
-    id: 2,
-    assignment: "Wave Motion Analysis",
-    subject: "Physics",
-    score: "85/100",
-    feedback: "Good understanding of concepts.",
-  },
-  {
-    id: 3,
-    assignment: "Macbeth Character Study",
-    subject: "English Lit.",
-    score: "88/100",
-    feedback: "Strong textual analysis.",
-  },
-  {
-    id: 4,
-    assignment: "Acid-Base Titration",
-    subject: "Chemistry",
-    score: "78/100",
-    feedback: "Calculation errors in part C.",
-  },
-  {
-    id: 5,
-    assignment: "Calculus Fundamentals",
-    subject: "Mathematics",
-    score: "95/100",
-    feedback: "Outstanding performance!",
-  },
-];
-
-const statusConfig = {
-  pending: {
-    label: "Pending",
-    className: "bg-parent-light text-parent border-parent/30",
-  },
-  submitted: {
-    label: "Submitted",
-    className: "bg-teacher-light text-teacher border-teacher/30",
-  },
-  overdue: {
-    label: "Overdue",
-    className: "bg-destructive/10 text-destructive border-destructive/30",
-  },
-};
-
-const teachers = [
-  {
-    id: 1,
-    name: "Mr. Robert Hayes",
-    subjects: ["Mathematics", "Further Mathematics"],
-    availability: "Available",
-  },
-  {
-    id: 2,
-    name: "Dr. Priya Sharma",
-    subjects: ["Physics", "Chemistry"],
-    availability: "Available",
-  },
-  {
-    id: 3,
-    name: "Ms. Claire Watson",
-    subjects: ["English Literature", "History"],
-    availability: "Busy",
-  },
-  {
-    id: 4,
-    name: "Mr. David Chen",
-    subjects: ["Chemistry", "Biology"],
-    availability: "Available",
-  },
-  {
-    id: 5,
-    name: "Mrs. Susan Patel",
-    subjects: ["Mathematics", "Biology"],
-    availability: "Offline",
-  },
-  {
-    id: 6,
-    name: "Mr. James Ford",
-    subjects: ["History", "English Literature"],
-    availability: "Busy",
-  },
-];
-
-type BookingState = {
-  teacher: (typeof teachers)[number];
-  callType: "Video" | "Audio";
-} | null;
-
-function StatusBadge({ status }: { status: string }) {
-  const config =
-    statusConfig[status as keyof typeof statusConfig] ?? statusConfig.pending;
-  return (
-    <Badge
-      variant="outline"
-      className={`text-xs font-semibold border ${config.className}`}
-    >
-      {config.label}
-    </Badge>
-  );
-}
-
 export function StudentDashboard({ student, onLogout }: Props) {
-  const duePending = assignments.filter((a) => a.status === "pending").length;
   const verificationCode = useMemo(
     () => getOrCreateVerificationCode(student.username),
     [student.username],
   );
 
-  // Book a Call state
-  const [subjectSearch, setSubjectSearch] = useState("");
-  const [booking, setBooking] = useState<BookingState>(null);
+  // All teacher-created assignments
+  const [assignments, setAssignments] = useState<Assignment[]>(() =>
+    getAssignments(),
+  );
+
+  // Student's bookings
+  const [myBookings, setMyBookings] = useState<CallBooking[]>(() =>
+    getBookingsForStudent(student.username),
+  );
+
+  // Student's grades
+  const [myGrades, setMyGrades] = useState(() =>
+    getGradesForStudent(student.username),
+  );
+
+  const [activeChatBookingId, setActiveChatBookingId] = useState<string | null>(
+    null,
+  );
+
+  // Unread counts per booking (messages from teacher)
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+
+  // Quizzes assigned to this student
+  const [myQuizzes, setMyQuizzes] = useState<
+    Array<{ quiz: Quiz; assignment: QuizAssignment }>
+  >(() => getAssignedQuizzesForStudent(student.username));
+  const [takingQuiz, setTakingQuiz] = useState<{
+    quiz: Quiz;
+    assignment: QuizAssignment;
+  } | null>(null);
+
+  // Refresh on focus (teacher may have added assignments or grades)
+  useEffect(() => {
+    function refresh() {
+      setAssignments(getAssignments());
+      setMyBookings(getBookingsForStudent(student.username));
+      setMyGrades(getGradesForStudent(student.username));
+      setMyQuizzes(getAssignedQuizzesForStudent(student.username));
+    }
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, [student.username]);
+
+  // Poll unread message counts every 1.5s so student sees badge when teacher replies
+  useEffect(() => {
+    function refreshUnread() {
+      const bookings = getBookingsForStudent(student.username);
+      const counts: Record<string, number> = {};
+      for (const b of bookings) {
+        counts[b.id] = getUnreadCount(b.id, "student");
+      }
+      setUnreadCounts(counts);
+    }
+    refreshUnread();
+    const timer = setInterval(refreshUnread, 1500);
+    return () => clearInterval(timer);
+  }, [student.username]);
+
+  // Assignment search
+  const [assignmentSearch, setAssignmentSearch] = useState("");
+  const filteredAssignments = useMemo(() => {
+    const q = assignmentSearch.trim().toLowerCase();
+    if (!q) return assignments;
+    return assignments.filter(
+      (a) =>
+        a.title.toLowerCase().includes(q) ||
+        a.subject.toLowerCase().includes(q) ||
+        a.teacherName.toLowerCase().includes(q),
+    );
+  }, [assignments, assignmentSearch]);
+
+  // Booking dialog
+  const [selectedAssignment, setSelectedAssignment] =
+    useState<Assignment | null>(null);
   const [bookingDate, setBookingDate] = useState("");
   const [bookingTime, setBookingTime] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
 
-  const filteredTeachers = useMemo(() => {
-    const q = subjectSearch.trim().toLowerCase();
-    if (!q) return teachers;
-    return teachers.filter((t) =>
-      t.subjects.some((s) => s.toLowerCase().includes(q)),
-    );
-  }, [subjectSearch]);
-
-  function openBookingDialog(
-    teacher: (typeof teachers)[number],
-    callType: "Video" | "Audio",
-  ) {
-    setBooking({ teacher, callType });
+  function openBooking(a: Assignment) {
+    setSelectedAssignment(a);
     setBookingDate("");
     setBookingTime("");
-    setDialogOpen(true);
+    setBookingDialogOpen(true);
   }
 
   function confirmBooking() {
-    if (!booking) return;
-    setDialogOpen(false);
-    toast.success(`Call booked with ${booking.teacher.name}!`);
-    setBooking(null);
-    setBookingDate("");
-    setBookingTime("");
+    if (!selectedAssignment || !bookingDate || !bookingTime) return;
+    const booking: CallBooking = {
+      id: `b_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      assignmentId: selectedAssignment.id,
+      assignmentTitle: selectedAssignment.title,
+      subject: selectedAssignment.subject,
+      teacherName: selectedAssignment.teacherName,
+      studentUsername: student.username,
+      studentName: student.name,
+      callType: "Video",
+      date: bookingDate,
+      time: bookingTime,
+      status: "pending",
+      createdAt: Date.now(),
+    };
+    saveCallBooking(booking);
+    setMyBookings((prev) => [booking, ...prev]);
+    setBookingDialogOpen(false);
+    setSelectedAssignment(null);
+    toast.success(
+      `Video call booked with ${selectedAssignment.teacherName} for ${bookingDate} at ${bookingTime}!`,
+    );
   }
 
   function cancelBooking() {
-    setDialogOpen(false);
-    setBooking(null);
+    setBookingDialogOpen(false);
+    setSelectedAssignment(null);
   }
 
   return (
@@ -286,7 +189,7 @@ export function StudentDashboard({ student, onLogout }: Props) {
             Welcome back, {student.name.split(" ")[0]}! 👋
           </h1>
           <p className="text-white/70 text-sm">
-            Here's your learning overview for this week.
+            Here's your learning overview.
           </p>
         </div>
       </div>
@@ -297,111 +200,43 @@ export function StudentDashboard({ student, onLogout }: Props) {
           <StatCard
             icon={BookOpen}
             label="Subjects Enrolled"
-            value="4"
+            value="—"
             color="text-student"
             bg="bg-student-light"
           />
           <StatCard
             icon={ClipboardList}
-            label="Assignments Due"
-            value={String(duePending)}
+            label="Assignments Available"
+            value={String(assignments.length)}
             color="text-parent"
             bg="bg-parent-light"
           />
           <StatCard
             icon={BarChart3}
-            label="Average Grade"
-            value="87.6%"
+            label="Grades Received"
+            value={String(myGrades.length)}
             color="text-teacher"
             bg="bg-teacher-light"
           />
         </div>
 
-        {/* My Subjects */}
+        {/* My Subjects — empty state */}
         <section className="mb-8">
           <h2 className="font-display text-xl font-bold text-foreground mb-4">
             My Subjects
           </h2>
           <div
             data-ocid="dashboard.subjects.list"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+            className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
           >
-            {subjects.map((s, i) => (
-              <div
-                key={s.id}
-                data-ocid={`dashboard.subjects.item.${i + 1}`}
-                className="card-lift bg-card rounded-xl border border-border/60 shadow-xs p-4"
-              >
-                <div
-                  className={`w-8 h-8 rounded-lg ${s.color} flex items-center justify-center mb-3`}
-                >
-                  <BookOpen
-                    className={`w-4 h-4 ${s.dot.replace("bg-", "text-")}`}
-                  />
-                </div>
-                <p className="font-semibold text-sm text-foreground mb-1 leading-tight">
-                  {s.name}
-                </p>
-                <p className="text-xs text-muted-foreground mb-3">
-                  {s.teacher}
-                </p>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Calendar className="w-3 h-3" />
-                  {s.next}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Assignments */}
-        <section className="mb-8">
-          <h2 className="font-display text-xl font-bold text-foreground mb-4">
-            My Assignments
-          </h2>
-          <div
-            data-ocid="dashboard.assignments.list"
-            className="bg-card rounded-xl border border-border/60 shadow-xs divide-y divide-border/60"
-          >
-            {assignments.map((a, i) => (
-              <div
-                key={a.id}
-                data-ocid={`dashboard.assignments.item.${i + 1}`}
-                className="flex items-center justify-between px-4 py-3.5 gap-4"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className={`w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center ${
-                      a.status === "submitted"
-                        ? "bg-teacher-light"
-                        : a.status === "overdue"
-                          ? "bg-destructive/10"
-                          : "bg-parent-light"
-                    }`}
-                  >
-                    {a.status === "submitted" ? (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-teacher" />
-                    ) : a.status === "overdue" ? (
-                      <AlertCircle className="w-3.5 h-3.5 text-destructive" />
-                    ) : (
-                      <Clock className="w-3.5 h-3.5 text-parent" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {a.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{a.subject}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <span className="text-xs text-muted-foreground hidden sm:block">
-                    Due {a.due}
-                  </span>
-                  <StatusBadge status={a.status} />
-                </div>
-              </div>
-            ))}
+            <BookOpen className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+            <p className="text-sm font-medium text-muted-foreground">
+              No subjects added yet.
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Your enrolled subjects will appear here once your teacher adds
+              them.
+            </p>
           </div>
         </section>
 
@@ -449,150 +284,113 @@ export function StudentDashboard({ student, onLogout }: Props) {
           </Card>
         </section>
 
-        {/* Grades */}
+        {/* Book a Video Call via an Assignment */}
         <section className="mb-8">
-          <h2 className="font-display text-xl font-bold text-foreground mb-4">
-            My Grades
+          <h2 className="font-display text-xl font-bold text-foreground mb-1">
+            Book a Video Call with Your Teacher
           </h2>
-          <div
-            data-ocid="dashboard.grades.table"
-            className="bg-card rounded-xl border border-border/60 shadow-xs overflow-hidden"
-          >
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/40">
-                  <TableHead className="font-semibold text-foreground">
-                    Assignment
-                  </TableHead>
-                  <TableHead className="font-semibold text-foreground">
-                    Subject
-                  </TableHead>
-                  <TableHead className="font-semibold text-foreground text-center">
-                    Score
-                  </TableHead>
-                  <TableHead className="font-semibold text-foreground hidden sm:table-cell">
-                    Feedback
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {grades.map((g, i) => (
-                  <TableRow
-                    key={g.id}
-                    data-ocid={`dashboard.grades.row.${i + 1}`}
-                    className="hover:bg-muted/30 transition-colors"
-                  >
-                    <TableCell className="font-medium text-sm">
-                      {g.assignment}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {g.subject}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <span className="text-sm font-semibold text-teacher">
-                        {g.score}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground hidden sm:table-cell">
-                      {g.feedback}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </section>
+          <p className="text-sm text-muted-foreground mb-4">
+            Find an assignment set by your teacher, select it, and book a video
+            call to discuss it and receive your grade.
+          </p>
 
-        {/* Book a Call with a Teacher */}
-        <section className="mb-8">
-          <h2 className="font-display text-xl font-bold text-foreground mb-4">
-            Book a Call with a Teacher
-          </h2>
-
-          {/* Subject search */}
+          {/* Search */}
           <div className="mb-5">
             <Input
               data-ocid="booking.search.input"
               type="text"
-              placeholder="Search by subject (e.g. Mathematics)"
-              value={subjectSearch}
-              onChange={(e) => setSubjectSearch(e.target.value)}
+              placeholder="Search by subject, title or teacher name..."
+              value={assignmentSearch}
+              onChange={(e) => setAssignmentSearch(e.target.value)}
               className="max-w-md"
             />
           </div>
 
-          {/* Teacher cards */}
-          {filteredTeachers.length === 0 ? (
+          {assignments.length === 0 ? (
             <div
-              data-ocid="booking.teachers.empty_state"
+              data-ocid="booking.assignments.empty_state"
+              className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
+            >
+              <CalendarClock className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+              <p className="text-sm font-medium text-muted-foreground">
+                No assignments available yet.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Assignments created by your teacher will appear here. Once one
+                is available, you can book a video call.
+              </p>
+            </div>
+          ) : filteredAssignments.length === 0 ? (
+            <div
+              data-ocid="booking.assignments.empty_state"
               className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center text-muted-foreground text-sm"
             >
-              No teachers found for that subject.
+              No assignments match your search.
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredTeachers.map((teacher, i) => {
-                const availColor =
-                  teacher.availability === "Available"
-                    ? "bg-green-100 text-green-700 border-green-200"
-                    : teacher.availability === "Busy"
-                      ? "bg-amber-100 text-amber-700 border-amber-200"
-                      : "bg-muted text-muted-foreground border-border";
-
+            <div
+              data-ocid="booking.assignments.list"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            >
+              {filteredAssignments.map((a, i) => {
+                // Has this student already booked a call for this assignment?
+                const alreadyBooked = myBookings.some(
+                  (b) => b.assignmentId === a.id,
+                );
                 return (
                   <div
-                    key={teacher.id}
-                    data-ocid={`booking.teacher.item.${i + 1}`}
+                    key={a.id}
+                    data-ocid={`booking.assignment.item.${i + 1}`}
                     className="card-lift bg-card rounded-xl border border-border/60 shadow-xs p-5 flex flex-col gap-3"
                   >
-                    {/* Name + availability */}
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="font-semibold text-sm text-foreground leading-snug">
-                        {teacher.name}
-                      </p>
+                    {/* Title + subject */}
+                    <div className="flex items-start gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-student-light flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <ClipboardList className="w-4 h-4 text-student" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm text-foreground leading-snug">
+                          {a.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {a.subject}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Teacher + due */}
+                    <div className="flex flex-wrap gap-2">
+                      <Badge
+                        variant="secondary"
+                        className="text-xs bg-teacher-light text-teacher border-teacher/20"
+                      >
+                        {a.teacherName}
+                      </Badge>
                       <Badge
                         variant="outline"
-                        className={`text-xs font-semibold border shrink-0 ${availColor}`}
+                        className="text-xs text-muted-foreground"
                       >
-                        {teacher.availability}
+                        Due {a.due}
                       </Badge>
                     </div>
 
-                    {/* Subject pills */}
-                    <div className="flex flex-wrap gap-1.5">
-                      {teacher.subjects.map((subj) => (
-                        <Badge
-                          key={subj}
-                          variant="secondary"
-                          className="text-xs bg-student-light text-student border-student/20"
-                        >
-                          {subj}
-                        </Badge>
-                      ))}
-                    </div>
-
-                    {/* Call buttons */}
-                    <div className="flex gap-2 mt-auto pt-1">
+                    {/* Book button */}
+                    {alreadyBooked ? (
+                      <div className="flex items-center gap-1.5 text-xs text-green-600 font-medium mt-auto pt-1">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        Call booked
+                      </div>
+                    ) : (
                       <Button
                         data-ocid={`booking.video.button.${i + 1}`}
                         size="sm"
-                        className="flex-1 bg-student text-white hover:bg-student/90 gap-1.5"
-                        onClick={() => openBookingDialog(teacher, "Video")}
+                        className="mt-auto bg-student text-white hover:bg-student/90 gap-1.5"
+                        onClick={() => openBooking(a)}
                       >
                         <Video className="w-3.5 h-3.5" />
-                        Video Call
+                        Book Video Call
                       </Button>
-                      <Button
-                        data-ocid={`booking.audio.button.${i + 1}`}
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 gap-1.5"
-                        onClick={() => openBookingDialog(teacher, "Audio")}
-                      >
-                        <Phone className="w-3.5 h-3.5" />
-                        Audio Call
-                      </Button>
-                    </div>
+                    )}
                   </div>
                 );
               })}
@@ -600,69 +398,317 @@ export function StudentDashboard({ student, onLogout }: Props) {
           )}
         </section>
 
-        {/* Booking Dialog */}
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent data-ocid="booking.dialog" className="sm:max-w-sm">
-            <DialogHeader>
-              <DialogTitle>Book a {booking?.callType ?? ""} Call</DialogTitle>
-            </DialogHeader>
-
-            {booking && (
-              <div className="space-y-4 py-2">
-                <p className="text-sm text-muted-foreground">
-                  You are booking a{" "}
-                  <span className="font-semibold text-foreground">
-                    {booking.callType} call
-                  </span>{" "}
-                  with{" "}
-                  <span className="font-semibold text-foreground">
-                    {booking.teacher.name}
-                  </span>
-                  .
-                </p>
-                <div className="space-y-2">
-                  <Label htmlFor="booking-date">Date</Label>
-                  <Input
-                    data-ocid="booking.date.input"
-                    id="booking-date"
-                    type="date"
-                    value={bookingDate}
-                    onChange={(e) => setBookingDate(e.target.value)}
-                  />
+        {/* My Booked Calls */}
+        {myBookings.length > 0 && (
+          <section className="mb-8">
+            <h2 className="font-display text-xl font-bold text-foreground mb-4">
+              My Booked Calls
+            </h2>
+            <div
+              data-ocid="dashboard.bookings.list"
+              className="bg-card rounded-xl border border-border/60 shadow-xs divide-y divide-border/60"
+            >
+              {myBookings.map((b, i) => (
+                <div
+                  key={b.id}
+                  data-ocid={`dashboard.bookings.item.${i + 1}`}
+                  className="flex items-center justify-between px-4 py-3.5 gap-4"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-student-light flex items-center justify-center flex-shrink-0">
+                      <Video className="w-3.5 h-3.5 text-student" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {b.assignmentTitle}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {b.teacherName} &middot; {b.date} at {b.time}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Badge
+                      variant="outline"
+                      className={`text-xs flex-shrink-0 ${
+                        b.status === "completed"
+                          ? "bg-green-50 text-green-700 border-green-200"
+                          : "bg-amber-50 text-amber-700 border-amber-200"
+                      }`}
+                    >
+                      {b.status === "completed" ? "Graded" : "Pending"}
+                    </Badge>
+                    <Button
+                      data-ocid={`dashboard.bookings.chat.button.${i + 1}`}
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 flex-shrink-0 relative"
+                      onClick={() => {
+                        setActiveChatBookingId(b.id);
+                        markChatRead(b.id, "student");
+                        setUnreadCounts((prev) => ({ ...prev, [b.id]: 0 }));
+                      }}
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      Chat
+                      {(unreadCounts[b.id] ?? 0) > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5 leading-none">
+                          {unreadCounts[b.id]}
+                        </span>
+                      )}
+                    </Button>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="booking-time">Time</Label>
-                  <Input
-                    data-ocid="booking.time.input"
-                    id="booking-time"
-                    type="time"
-                    value={bookingTime}
-                    onChange={(e) => setBookingTime(e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
+              ))}
+            </div>
+          </section>
+        )}
 
-            <DialogFooter className="gap-2">
-              <Button
-                data-ocid="booking.cancel_button"
-                variant="outline"
-                onClick={cancelBooking}
-              >
-                Cancel
-              </Button>
-              <Button
-                data-ocid="booking.confirm_button"
-                className="bg-student text-white hover:bg-student/90"
-                onClick={confirmBooking}
-                disabled={!bookingDate || !bookingTime}
-              >
-                Confirm Booking
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* My Grades */}
+        <section className="mb-8">
+          <h2 className="font-display text-xl font-bold text-foreground mb-4">
+            My Grades
+          </h2>
+          {myGrades.length === 0 ? (
+            <div
+              data-ocid="dashboard.grades.table"
+              className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
+            >
+              <BarChart3 className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+              <p className="text-sm font-medium text-muted-foreground">
+                No grades recorded yet.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Grades will appear here once your teacher marks your work after
+                your video call.
+              </p>
+            </div>
+          ) : (
+            <div
+              data-ocid="dashboard.grades.table"
+              className="bg-card rounded-xl border border-border/60 shadow-xs divide-y divide-border/60"
+            >
+              {myGrades.map((g, i) => (
+                <div
+                  key={g.id}
+                  data-ocid={`dashboard.grades.item.${i + 1}`}
+                  className="flex items-center justify-between px-4 py-4 gap-4"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-teacher-light flex items-center justify-center flex-shrink-0">
+                      <GraduationCap className="w-4 h-4 text-teacher" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {g.assignmentTitle}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {g.subject} &middot; {g.teacherName}
+                      </p>
+                      {g.feedback && (
+                        <p className="text-xs text-muted-foreground mt-0.5 italic">
+                          "{g.feedback}"
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0 text-right">
+                    <p className="font-display text-xl font-bold text-teacher">
+                      {g.grade}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+        {/* My Quizzes */}
+        <section className="mb-8">
+          <h2 className="font-display text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+            <ClipboardCheck className="w-5 h-5 text-student" />
+            My Quizzes
+          </h2>
+          {myQuizzes.length === 0 ? (
+            <div
+              data-ocid="quiz.my.empty_state"
+              className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
+            >
+              <ClipboardCheck className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+              <p className="text-sm font-medium text-muted-foreground">
+                No quizzes assigned yet.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Your teacher will assign quizzes and tests here.
+              </p>
+            </div>
+          ) : (
+            <div
+              data-ocid="quiz.my.list"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            >
+              {myQuizzes.map(({ quiz, assignment }, i) => {
+                const used = getAttemptsUsed(quiz.id, student.username);
+                const allowed = quiz.settings.attemptsAllowed;
+                const hasAttempts = allowed === 0 || used < allowed;
+                const isDone = allowed > 0 && used >= allowed;
+                return (
+                  <div
+                    key={assignment.id}
+                    data-ocid={`quiz.my.item.${i + 1}`}
+                    className="bg-card border border-border/60 rounded-xl p-4 flex flex-col gap-3"
+                  >
+                    <div className="flex items-start gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-student-light flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <ClipboardCheck className="w-4 h-4 text-student" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm text-foreground leading-snug">
+                          {quiz.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {quiz.subject} · {quiz.gradeLevel}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      <Badge
+                        variant="outline"
+                        className={`text-xs ${quiz.type === "test" ? "bg-purple-50 text-purple-700 border-purple-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}
+                      >
+                        {quiz.type === "test" ? "Test" : "Quiz"}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className="text-xs text-muted-foreground"
+                      >
+                        {quiz.teacherName}
+                      </Badge>
+                      {quiz.settings.dueDate && (
+                        <Badge
+                          variant="outline"
+                          className="text-xs text-muted-foreground"
+                        >
+                          Due {quiz.settings.dueDate}
+                        </Badge>
+                      )}
+                      <Badge
+                        variant="outline"
+                        className={`text-xs ${isDone ? "bg-green-50 text-green-700 border-green-200" : used > 0 ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-muted text-muted-foreground"}`}
+                      >
+                        {isDone
+                          ? "Completed"
+                          : used > 0
+                            ? "In Progress"
+                            : "Not Started"}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Attempts: {used}
+                      {allowed > 0 ? ` / ${allowed}` : " (unlimited)"}
+                    </p>
+                    {hasAttempts ? (
+                      <Button
+                        data-ocid={`quiz.my.take.button.${i + 1}`}
+                        size="sm"
+                        className="mt-auto bg-student hover:bg-student/90 text-white gap-1.5"
+                        onClick={() => setTakingQuiz({ quiz, assignment })}
+                      >
+                        <ClipboardCheck className="w-3.5 h-3.5" />
+                        {used > 0 ? "Retake" : "Take Quiz"}
+                      </Button>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-auto pt-1 font-medium">
+                        ✓ All attempts used
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
       </main>
+
+      {activeChatBookingId &&
+        (() => {
+          const b = myBookings.find((x) => x.id === activeChatBookingId);
+          if (!b) return null;
+          return (
+            <ChatWindow
+              bookingId={b.id}
+              bookingLabel={`${b.assignmentTitle} with ${b.teacherName}`}
+              senderRole="student"
+              senderName={student.name}
+              onClose={() => setActiveChatBookingId(null)}
+            />
+          );
+        })()}
+
+      {/* Booking Dialog */}
+      <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>
+        <DialogContent data-ocid="booking.dialog" className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Book a Video Call</DialogTitle>
+          </DialogHeader>
+
+          {selectedAssignment && (
+            <div className="space-y-4 py-2">
+              <div className="bg-muted/40 rounded-lg px-4 py-3 space-y-1 text-sm">
+                <p>
+                  <span className="font-semibold">Assignment:</span>{" "}
+                  {selectedAssignment.title}
+                </p>
+                <p>
+                  <span className="font-semibold">Subject:</span>{" "}
+                  {selectedAssignment.subject}
+                </p>
+                <p>
+                  <span className="font-semibold">Teacher:</span>{" "}
+                  {selectedAssignment.teacherName}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="booking-date">Date</Label>
+                <Input
+                  data-ocid="booking.date.input"
+                  id="booking-date"
+                  type="date"
+                  value={bookingDate}
+                  onChange={(e) => setBookingDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="booking-time">Time</Label>
+                <Input
+                  data-ocid="booking.time.input"
+                  id="booking-time"
+                  type="time"
+                  value={bookingTime}
+                  onChange={(e) => setBookingTime(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button
+              data-ocid="booking.cancel_button"
+              variant="outline"
+              onClick={cancelBooking}
+            >
+              Cancel
+            </Button>
+            <Button
+              data-ocid="booking.confirm_button"
+              className="bg-student text-white hover:bg-student/90"
+              onClick={confirmBooking}
+              disabled={!bookingDate || !bookingTime}
+            >
+              Confirm Booking
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <footer className="py-5 text-center text-sm text-muted-foreground border-t border-border/60">
         © {new Date().getFullYear()}. Built with love using{" "}
@@ -675,6 +721,22 @@ export function StudentDashboard({ student, onLogout }: Props) {
           caffeine.ai
         </a>
       </footer>
+      {/* Quiz Taker */}
+      {takingQuiz && (
+        <QuizTaker
+          open={!!takingQuiz}
+          onClose={() => {
+            setTakingQuiz(null);
+            setMyQuizzes(getAssignedQuizzesForStudent(student.username));
+          }}
+          quiz={takingQuiz.quiz}
+          assignment={takingQuiz.assignment}
+          studentUsername={student.username}
+          studentName={student.name}
+        />
+      )}
+
+      <AiDoubtBot />
     </div>
   );
 }
@@ -693,22 +755,16 @@ function StatCard({
   bg: string;
 }) {
   return (
-    <Card className="border-border/60 shadow-xs">
-      <CardHeader className="pb-2 pt-4 px-4">
-        <div className="flex items-center gap-2">
-          <div
-            className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center`}
-          >
-            <Icon className={`w-4 h-4 ${color}`} />
-          </div>
-          <CardTitle className="text-xs font-medium text-muted-foreground">
-            {label}
-          </CardTitle>
+    <div className="bg-card rounded-xl border border-border/60 shadow-xs p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <div
+          className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center`}
+        >
+          <Icon className={`w-4 h-4 ${color}`} />
         </div>
-      </CardHeader>
-      <CardContent className="pb-4 px-4">
-        <p className={`text-2xl font-display font-bold ${color}`}>{value}</p>
-      </CardContent>
-    </Card>
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      </div>
+      <p className={`text-2xl font-display font-bold ${color}`}>{value}</p>
+    </div>
   );
 }

@@ -1,5 +1,12 @@
 import { Button } from "@/components/ui/button";
-import { Loader2, Shield, Users } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { HelpCircle, Loader2, Shield, Users } from "lucide-react";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
@@ -110,6 +117,69 @@ export function ParentLogin({ onBack, onLoggedIn }: Props) {
           Internet Identity provides secure, anonymous authentication on the
           Internet Computer network.
         </p>
+
+        {/* Forgot / Recovery */}
+        <div className="text-center">
+          <Dialog>
+            <DialogTrigger asChild>
+              <button
+                data-ocid="parent.forgot_password.button"
+                className="text-xs text-parent hover:underline flex items-center gap-1 mx-auto"
+                type="button"
+              >
+                <HelpCircle className="w-3 h-3" />
+                Forgot / Lost access to Internet Identity?
+              </button>
+            </DialogTrigger>
+            <DialogContent data-ocid="parent.forgot_password.dialog">
+              <DialogHeader>
+                <DialogTitle>Recover Internet Identity Access</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 text-sm text-muted-foreground">
+                <p>
+                  Internet Identity uses cryptographic keys instead of
+                  passwords. To regain access, try one of these options:
+                </p>
+                <ol className="list-decimal list-inside space-y-2">
+                  <li>
+                    <span className="font-medium text-foreground">
+                      Use a recovery phrase
+                    </span>{" "}
+                    -- if you saved a recovery phrase when setting up your
+                    identity, visit{" "}
+                    <a
+                      href="https://identity.ic0.app"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-parent underline"
+                    >
+                      identity.ic0.app
+                    </a>{" "}
+                    and choose "Lost Access".
+                  </li>
+                  <li>
+                    <span className="font-medium text-foreground">
+                      Use another registered device
+                    </span>{" "}
+                    -- log in from a device (phone, tablet, other computer) that
+                    you previously linked to your Internet Identity.
+                  </li>
+                  <li>
+                    <span className="font-medium text-foreground">
+                      Use a recovery device
+                    </span>{" "}
+                    -- if you added a hardware security key as a recovery
+                    device, plug it in and use it to authenticate.
+                  </li>
+                </ol>
+                <p className="text-xs">
+                  If you have no recovery options available, you will need to
+                  create a new Internet Identity and re-link your student.
+                </p>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
     </AuthLayout>
   );
