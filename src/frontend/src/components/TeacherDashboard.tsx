@@ -23,15 +23,22 @@ import {
   ClipboardCheck,
   ClipboardList,
   Clock,
+  Copy,
+  Flag,
   GraduationCap,
+  Headphones,
+  Megaphone,
   MessageSquare,
   Pencil,
   Phone,
   Plus,
+  School,
+  Search,
   Trash2,
   User,
   Users,
   Video,
+  X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -52,6 +59,17 @@ import {
   saveScheduledSession,
 } from "../utils/assignmentStorage";
 import {
+  type ClassAnnouncement,
+  type TeacherClass,
+  addStudentToClass,
+  createClass,
+  deleteAnnouncement,
+  deleteClass,
+  getClassesForTeacher,
+  postAnnouncement,
+  removeStudentFromClass,
+} from "../utils/classStorage";
+import {
   type Quiz,
   type QuizAssignment,
   deleteQuiz,
@@ -62,6 +80,11 @@ import {
   saveQuiz,
   updateQuiz,
 } from "../utils/quizStorage";
+import { getStudentUsers } from "../utils/studentStorage";
+import {
+  getWarningsForTeacher,
+  isTeacherBanned,
+} from "../utils/supportStorage";
 import {
   type TeacherProfile,
   addTeacherAward,
@@ -74,6 +97,8 @@ import { ChatWindow } from "./ChatWindow";
 import { DashboardNav } from "./DashboardNav";
 import { QuizBuilder } from "./QuizBuilder";
 import { QuizResults } from "./QuizResults";
+import { ReportUser } from "./ReportUser";
+import { SupportPortal } from "./SupportPortal";
 
 type Props = {
   onLogout: () => void;
@@ -152,6 +177,34 @@ export function TeacherDashboard({ onLogout }: Props) {
   const [quizResultsQuiz, setQuizResultsQuiz] = useState<Quiz | null>(null);
   const [quizSectionOpen, setQuizSectionOpen] = useState(true);
 
+  // My Classes state
+  const [classes, setClasses] = useState<TeacherClass[]>(() =>
+    getClassesForTeacher(getTeacherName()),
+  );
+  const [classSectionOpen, setClassSectionOpen] = useState(true);
+  const [createClassOpen, setCreateClassOpen] = useState(false);
+  const [newClassName, setNewClassName] = useState("");
+  const [newClassSubject, setNewClassSubject] = useState("");
+  const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
+  const [classStudentSearch, setClassStudentSearch] = useState<
+    Record<string, string>
+  >({});
+  const [copiedClassId, setCopiedClassId] = useState<string | null>(null);
+  const [announcementText, setAnnouncementText] = useState<
+    Record<string, string>
+  >({});
+  const [announcementFormOpen, setAnnouncementFormOpen] = useState<
+    Record<string, boolean>
+  >({});
+  const [deleteClassConfirm, setDeleteClassConfirm] = useState<string | null>(
+    null,
+  );
+
+  // Support portal & report user state
+  const [supportOpen, setSupportOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [warningMsg, setWarningMsg] = useState<string | null>(null);
+
   // Refresh bookings when window gets focus (student may have booked)
   useEffect(() => {
     function refresh() {
@@ -162,6 +215,7 @@ export function TeacherDashboard({ onLogout }: Props) {
         getScheduledSessions().filter((s) => s.teacherName === name),
       );
       setQuizzes(getQuizzes().filter((q) => q.teacherName === name));
+      setClasses(getClassesForTeacher(name));
     }
     window.addEventListener("focus", refresh);
     return () => window.removeEventListener("focus", refresh);
@@ -183,6 +237,28 @@ export function TeacherDashboard({ onLogout }: Props) {
     const timer = setInterval(refreshUnread, 1500);
     return () => clearInterval(timer);
   }, []);
+
+  // Ban and warning poll
+  useEffect(() => {
+    function checkBanWarn() {
+      const name = getTeacherName();
+      if (!name) return;
+      if (isTeacherBanned(name)) {
+        toast.error("Your account has been banned by the admin.");
+        onLogout();
+        return;
+      }
+      const warnings = getWarningsForTeacher(name);
+      if (warnings.length > 0) {
+        setWarningMsg(warnings[warnings.length - 1].message);
+      } else {
+        setWarningMsg(null);
+      }
+    }
+    checkBanWarn();
+    const id = setInterval(checkBanWarn, 5000);
+    return () => clearInterval(id);
+  }, [onLogout]);
 
   function handleSaveName() {
     const trimmed = nameInput.trim();
@@ -393,8 +469,88 @@ export function TeacherDashboard({ onLogout }: Props) {
   const pendingBookings = bookings.filter((b) => b.status === "pending");
   const completedBookings = bookings.filter((b) => b.status === "completed");
 
+  // --- Class handlers ---
+  function handleCreateClass() {
+    if (!newClassName.trim() || !newClassSubject.trim()) return;
+    const name = teacherName || getTeacherName();
+    const newCls = createClass(newClassName, newClassSubject, name);
+    setClasses((prev) => [...prev, newCls]);
+    setNewClassName("");
+    setNewClassSubject("");
+    setCreateClassOpen(false);
+    toast.success(`Class "${newCls.name}" created! Code: ${newCls.classCode}`);
+  }
+
+  function handleDeleteClass(id: string) {
+    deleteClass(id);
+    setClasses((prev) => prev.filter((c) => c.id !== id));
+    setDeleteClassConfirm(null);
+    toast.success("Class deleted.");
+  }
+
+  function handleAddStudentToClass(classId: string, username: string) {
+    const result = addStudentToClass(classId, username);
+    if (result.success) {
+      setClasses(getClassesForTeacher(teacherName || getTeacherName()));
+      setClassStudentSearch((prev) => ({ ...prev, [classId]: "" }));
+      toast.success(result.message);
+    } else {
+      toast.error(result.message);
+    }
+  }
+
+  function handleRemoveStudentFromClass(classId: string, username: string) {
+    removeStudentFromClass(classId, username);
+    setClasses(getClassesForTeacher(teacherName || getTeacherName()));
+    toast.success(`${username} removed from class.`);
+  }
+
+  function handleCopyClassCode(cls: TeacherClass) {
+    navigator.clipboard.writeText(cls.classCode).then(() => {
+      setCopiedClassId(cls.id);
+      toast.success(`Class code ${cls.classCode} copied!`);
+      setTimeout(() => setCopiedClassId(null), 2000);
+    });
+  }
+
+  function handlePostAnnouncement(classId: string) {
+    const text = announcementText[classId]?.trim();
+    if (!text) return;
+    postAnnouncement(classId, text);
+    setClasses(getClassesForTeacher(getTeacherName()));
+    setAnnouncementText((prev) => ({ ...prev, [classId]: "" }));
+    setAnnouncementFormOpen((prev) => ({ ...prev, [classId]: false }));
+    toast.success("Announcement posted!");
+  }
+
+  function handleDeleteAnnouncement(classId: string, announcementId: string) {
+    deleteAnnouncement(classId, announcementId);
+    setClasses(getClassesForTeacher(getTeacherName()));
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {/* Support Portal */}
+      {supportOpen && (
+        <SupportPortal
+          senderRole="teacher"
+          senderName={teacherName}
+          senderPrincipal={
+            localStorage.getItem("tuitions_teacher_principal") ?? teacherName
+          }
+          onClose={() => setSupportOpen(false)}
+        />
+      )}
+
+      {/* Report User */}
+      {reportOpen && (
+        <ReportUser
+          reporterRole="teacher"
+          reporterName={teacherName}
+          onClose={() => setReportOpen(false)}
+        />
+      )}
+
       {/* Teacher name setup dialog */}
       <Dialog
         open={nameDialogOpen}
@@ -455,6 +611,39 @@ export function TeacherDashboard({ onLogout }: Props) {
         onLogout={onLogout}
         headerClass="dashboard-header-teacher"
       />
+
+      {/* Warning banner */}
+      {warningMsg && (
+        <div className="bg-amber-100 border-b border-amber-300 px-4 py-2 flex items-center gap-2">
+          <span className="text-amber-800 text-sm font-medium">
+            ⚠️ Admin Warning: {warningMsg}
+          </span>
+        </div>
+      )}
+
+      {/* Support & Report action row */}
+      <div className="dashboard-header-teacher px-4 sm:px-6 pt-2 pb-0">
+        <div className="max-w-6xl mx-auto flex justify-end gap-2">
+          <button
+            type="button"
+            data-ocid="teacher.support.button"
+            onClick={() => setSupportOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white text-xs font-semibold transition-colors"
+          >
+            <Headphones className="w-3.5 h-3.5" />
+            Support
+          </button>
+          <button
+            type="button"
+            data-ocid="teacher.report.open_modal_button"
+            onClick={() => setReportOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white text-xs font-semibold transition-colors"
+          >
+            <Flag className="w-3.5 h-3.5" />
+            Report User
+          </button>
+        </div>
+      </div>
 
       {/* Welcome banner */}
       <div className="dashboard-header-teacher px-4 sm:px-6 pb-8">
@@ -765,6 +954,465 @@ export function TeacherDashboard({ onLogout }: Props) {
               ))}
             </div>
           )}
+        </section>
+
+        {/* My Classes */}
+        <section className="mb-8">
+          <button
+            type="button"
+            data-ocid="teacher.classes.section.toggle"
+            onClick={() => setClassSectionOpen((o) => !o)}
+            className="flex items-center gap-2 w-full mb-4 group"
+          >
+            <School className="w-5 h-5 text-teacher" />
+            <h2 className="font-display text-xl font-bold text-foreground">
+              My Classes
+            </h2>
+            {classSectionOpen ? (
+              <ChevronUp className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
+            )}
+          </button>
+
+          {classSectionOpen && (
+            <div className="space-y-3">
+              <Button
+                data-ocid="teacher.classes.create.button"
+                onClick={() => setCreateClassOpen(true)}
+                className="bg-teacher hover:bg-teacher/90 text-white gap-2"
+                size="sm"
+              >
+                <Plus className="w-4 h-4" />
+                Create Class
+              </Button>
+
+              {classes.length === 0 ? (
+                <div
+                  data-ocid="teacher.classes.empty_state"
+                  className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
+                >
+                  <School className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+                  <p className="text-sm font-medium text-muted-foreground">
+                    No classes yet.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Create a class and add students to get started.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {classes.map((cls, i) => {
+                    const isExpanded = expandedClassId === cls.id;
+                    const searchVal = classStudentSearch[cls.id] ?? "";
+                    const allStudents = getStudentUsers();
+                    const matchingStudents =
+                      searchVal.trim().length > 0
+                        ? allStudents.filter(
+                            (s) =>
+                              !cls.studentUsernames.includes(
+                                s.username.toLowerCase(),
+                              ) &&
+                              (s.username
+                                .toLowerCase()
+                                .includes(searchVal.toLowerCase()) ||
+                                s.name
+                                  .toLowerCase()
+                                  .includes(searchVal.toLowerCase())),
+                          )
+                        : [];
+                    const isCopied = copiedClassId === cls.id;
+                    return (
+                      <Card
+                        key={cls.id}
+                        data-ocid={`teacher.classes.item.${i + 1}`}
+                        className="border border-border/60 shadow-xs"
+                      >
+                        <CardHeader className="pb-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <CardTitle className="text-base font-bold truncate">
+                                {cls.name}
+                              </CardTitle>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {cls.subject}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <Badge variant="secondary" className="text-xs">
+                                {cls.studentUsernames.length} student
+                                {cls.studentUsernames.length !== 1 ? "s" : ""}
+                              </Badge>
+                              <Button
+                                data-ocid={`teacher.classes.delete_button.${i + 1}`}
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                onClick={() => setDeleteClassConfirm(cls.id)}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Class Code */}
+                          <div className="flex items-center gap-2 mt-3 bg-muted/50 rounded-lg px-3 py-2">
+                            <span className="text-xs text-muted-foreground font-medium mr-1">
+                              Class Code:
+                            </span>
+                            <span className="font-mono text-lg font-bold text-teacher tracking-widest flex-1">
+                              {cls.classCode}
+                            </span>
+                            <Button
+                              data-ocid={`teacher.classes.copy_code.${i + 1}`}
+                              size="sm"
+                              variant="outline"
+                              className="h-7 gap-1 text-xs"
+                              onClick={() => handleCopyClassCode(cls)}
+                            >
+                              <Copy className="w-3 h-3" />
+                              {isCopied ? "Copied!" : "Copy"}
+                            </Button>
+                          </div>
+
+                          <button
+                            type="button"
+                            className="flex items-center gap-1 mt-2 text-xs text-teacher hover:text-teacher/80 font-medium transition-colors"
+                            onClick={() =>
+                              setExpandedClassId(isExpanded ? null : cls.id)
+                            }
+                          >
+                            {isExpanded ? (
+                              <>
+                                <ChevronUp className="w-3.5 h-3.5" /> Hide
+                                students
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown className="w-3.5 h-3.5" /> Manage
+                                students
+                              </>
+                            )}
+                          </button>
+                        </CardHeader>
+
+                        {isExpanded && (
+                          <CardContent className="pt-0 pb-4">
+                            {/* Enrolled students */}
+                            {cls.studentUsernames.length > 0 ? (
+                              <div className="mb-3 space-y-1">
+                                {cls.studentUsernames.map((uname, si) => {
+                                  const stu = allStudents.find(
+                                    (s) =>
+                                      s.username.toLowerCase() ===
+                                      uname.toLowerCase(),
+                                  );
+                                  return (
+                                    <div
+                                      key={uname}
+                                      data-ocid={`teacher.classes.student.item.${si + 1}`}
+                                      className="flex items-center justify-between bg-muted/40 rounded-lg px-3 py-1.5"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-teacher-light flex items-center justify-center">
+                                          <User className="w-3 h-3 text-teacher" />
+                                        </div>
+                                        <span className="text-sm font-medium">
+                                          {stu ? stu.name : uname}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">
+                                          @{uname}
+                                        </span>
+                                      </div>
+                                      <Button
+                                        data-ocid={`teacher.classes.remove_student.${si + 1}`}
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                        onClick={() =>
+                                          handleRemoveStudentFromClass(
+                                            cls.id,
+                                            uname,
+                                          )
+                                        }
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </Button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground mb-3">
+                                No students yet. Search below or share the class
+                                code.
+                              </p>
+                            )}
+
+                            {/* Add student search */}
+                            <div className="relative">
+                              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                              <input
+                                data-ocid={`teacher.classes.search_input.${i + 1}`}
+                                type="text"
+                                placeholder="Search students by name or username..."
+                                className="w-full pl-8 pr-3 py-1.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-teacher/50"
+                                value={searchVal}
+                                onChange={(e) =>
+                                  setClassStudentSearch((prev) => ({
+                                    ...prev,
+                                    [cls.id]: e.target.value,
+                                  }))
+                                }
+                              />
+                            </div>
+
+                            {matchingStudents.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mt-2">
+                                {matchingStudents.slice(0, 8).map((s) => (
+                                  <button
+                                    key={s.username}
+                                    type="button"
+                                    onClick={() =>
+                                      handleAddStudentToClass(
+                                        cls.id,
+                                        s.username,
+                                      )
+                                    }
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teacher-light text-teacher text-xs font-medium hover:bg-teacher hover:text-white transition-colors"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                    {s.name}{" "}
+                                    <span className="opacity-70">
+                                      @{s.username}
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+
+                            {searchVal.trim().length > 0 &&
+                              matchingStudents.length === 0 && (
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  No matching students found.
+                                </p>
+                              )}
+
+                            {/* Announcements */}
+                            <div className="mt-4 border-t border-border/40 pt-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-semibold text-foreground flex items-center gap-1">
+                                  <Megaphone className="w-3.5 h-3.5 text-teacher" />
+                                  Announcements
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 text-xs gap-1"
+                                  onClick={() =>
+                                    setAnnouncementFormOpen((prev) => ({
+                                      ...prev,
+                                      [cls.id]: !prev[cls.id],
+                                    }))
+                                  }
+                                >
+                                  <Plus className="w-3 h-3" />
+                                  Post
+                                </Button>
+                              </div>
+
+                              {announcementFormOpen[cls.id] && (
+                                <div className="mb-3 space-y-2">
+                                  <textarea
+                                    className="w-full text-sm border border-border rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-teacher/50 bg-background"
+                                    rows={2}
+                                    placeholder="Write an announcement for this class..."
+                                    value={announcementText[cls.id] ?? ""}
+                                    onChange={(e) =>
+                                      setAnnouncementText((prev) => ({
+                                        ...prev,
+                                        [cls.id]: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      className="bg-teacher hover:bg-teacher/90 text-white h-7 text-xs"
+                                      onClick={() =>
+                                        handlePostAnnouncement(cls.id)
+                                      }
+                                      disabled={
+                                        !announcementText[cls.id]?.trim()
+                                      }
+                                    >
+                                      Post
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 text-xs"
+                                      onClick={() =>
+                                        setAnnouncementFormOpen((prev) => ({
+                                          ...prev,
+                                          [cls.id]: false,
+                                        }))
+                                      }
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {cls.announcements.length === 0 ? (
+                                <p className="text-xs text-muted-foreground">
+                                  No announcements yet.
+                                </p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {cls.announcements.map(
+                                    (ann: ClassAnnouncement) => (
+                                      <div
+                                        key={ann.id}
+                                        className="flex items-start justify-between gap-2 bg-muted/40 rounded-lg px-3 py-2"
+                                      >
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm text-foreground">
+                                            {ann.text}
+                                          </p>
+                                          <p className="text-xs text-muted-foreground mt-0.5">
+                                            {new Date(
+                                              ann.createdAt,
+                                            ).toLocaleString()}
+                                          </p>
+                                        </div>
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-6 w-6 text-muted-foreground hover:text-destructive flex-shrink-0"
+                                          onClick={() =>
+                                            handleDeleteAnnouncement(
+                                              cls.id,
+                                              ann.id,
+                                            )
+                                          }
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </Button>
+                                      </div>
+                                    ),
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        )}
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Delete Class Confirmation Dialog */}
+          <Dialog
+            open={deleteClassConfirm !== null}
+            onOpenChange={(o) => !o && setDeleteClassConfirm(null)}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Class</DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to delete this class? All enrolled
+                students will be removed.
+              </p>
+              <DialogFooter>
+                <Button
+                  data-ocid="teacher.classes.delete.cancel_button"
+                  variant="outline"
+                  onClick={() => setDeleteClassConfirm(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  data-ocid="teacher.classes.delete.confirm_button"
+                  variant="destructive"
+                  onClick={() =>
+                    deleteClassConfirm && handleDeleteClass(deleteClassConfirm)
+                  }
+                >
+                  Delete
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Create Class Dialog */}
+          <Dialog open={createClassOpen} onOpenChange={setCreateClassOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create a New Class</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <div>
+                  <Label
+                    htmlFor="new-class-name"
+                    className="text-sm font-medium"
+                  >
+                    Class Name
+                  </Label>
+                  <Input
+                    data-ocid="teacher.classes.name.input"
+                    id="new-class-name"
+                    placeholder="e.g. Year 8 Maths Group A"
+                    value={newClassName}
+                    onChange={(e) => setNewClassName(e.target.value)}
+                    className="mt-1.5"
+                  />
+                </div>
+                <div>
+                  <Label
+                    htmlFor="new-class-subject"
+                    className="text-sm font-medium"
+                  >
+                    Subject
+                  </Label>
+                  <Input
+                    data-ocid="teacher.classes.subject.input"
+                    id="new-class-subject"
+                    placeholder="e.g. Mathematics"
+                    value={newClassSubject}
+                    onChange={(e) => setNewClassSubject(e.target.value)}
+                    className="mt-1.5"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  data-ocid="teacher.classes.create.cancel_button"
+                  variant="outline"
+                  onClick={() => {
+                    setCreateClassOpen(false);
+                    setNewClassName("");
+                    setNewClassSubject("");
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  data-ocid="teacher.classes.create.submit_button"
+                  className="bg-teacher hover:bg-teacher/90 text-white"
+                  onClick={handleCreateClass}
+                  disabled={!newClassName.trim() || !newClassSubject.trim()}
+                >
+                  Create Class
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </section>
 
         {/* Quiz & Test Builder */}

@@ -1,5 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
   TableBody,
@@ -9,16 +11,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import {
+  AlertTriangle,
   Ban,
   BookOpen,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Flag,
   GraduationCap,
+  Headphones,
   LogOut,
   MessageSquare,
   Phone,
+  Send,
   ShieldCheck,
   Star,
+  Ticket,
   Trash2,
   Users,
 } from "lucide-react";
@@ -40,6 +50,31 @@ import {
   getStudentUsers,
   unbanStudent,
 } from "../utils/studentStorage";
+import {
+  type SupportReport,
+  type SupportTicket,
+  banParent,
+  banTeacher,
+  clearTeacherWarnings,
+  closeTicket,
+  deleteParent,
+  deleteReport,
+  deleteTeacher,
+  getAllDirectChats,
+  getReports,
+  getSupportChat,
+  getTickets,
+  getWarningsForTeacher,
+  isParentBanned,
+  isTeacherBanned,
+  markReportActioned,
+  sendDirectMessage,
+  sendSupportMessage,
+  unbanParent,
+  unbanTeacher,
+  warnStudent,
+  warnTeacher,
+} from "../utils/supportStorage";
 
 function getAllChatMessages(): ChatMessage[] {
   try {
@@ -62,6 +97,39 @@ export function AdminDashboard({ onLogout }: Props) {
   const [grades, setGrades] = useState<Grade[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [reports, setReports] = useState<SupportReport[]>([]);
+  const [directChats, setDirectChats] = useState<
+    { principal: string; lastMsg: string; senderName: string }[]
+  >([]);
+  const [expandedChatPrincipal, setExpandedChatPrincipal] = useState<
+    string | null
+  >(null);
+  const [directChatMsgs, setDirectChatMsgs] = useState<
+    Record<string, ReturnType<typeof getSupportChat>>
+  >({});
+  const [directChatInput, setDirectChatInput] = useState<
+    Record<string, string>
+  >({});
+  const [expandedTicketId, setExpandedTicketId] = useState<string | null>(null);
+  const [ticketChatMsgs, setTicketChatMsgs] = useState<
+    Record<string, ReturnType<typeof getSupportChat>>
+  >({});
+  const [ticketChatInput, setTicketChatInput] = useState<
+    Record<string, string>
+  >({});
+  const [warnInputTeacher, setWarnInputTeacher] = useState<
+    Record<string, string>
+  >({});
+  const [warnOpenTeacher, setWarnOpenTeacher] = useState<
+    Record<string, boolean>
+  >({});
+  const [warnInputReport, setWarnInputReport] = useState<
+    Record<string, string>
+  >({});
+  const [warnOpenReport, setWarnOpenReport] = useState<Record<string, boolean>>(
+    {},
+  );
 
   const refresh = useCallback(() => {
     setStudents(getStudentUsers());
@@ -70,6 +138,9 @@ export function AdminDashboard({ onLogout }: Props) {
     setGrades(getGrades());
     setMessages(getAllChatMessages());
     setReviews(getReviews());
+    setTickets(getTickets());
+    setReports(getReports());
+    setDirectChats(getAllDirectChats());
   }, []);
 
   useEffect(() => {
@@ -77,6 +148,38 @@ export function AdminDashboard({ onLogout }: Props) {
     const id = setInterval(refresh, 2000);
     return () => clearInterval(id);
   }, [refresh]);
+
+  // Refresh expanded direct chat messages
+  useEffect(() => {
+    if (!expandedChatPrincipal) return;
+    function refreshChat() {
+      if (expandedChatPrincipal) {
+        setDirectChatMsgs((prev) => ({
+          ...prev,
+          [expandedChatPrincipal]: getSupportChat(expandedChatPrincipal),
+        }));
+      }
+    }
+    refreshChat();
+    const id = setInterval(refreshChat, 2000);
+    return () => clearInterval(id);
+  }, [expandedChatPrincipal]);
+
+  // Refresh expanded ticket chat
+  useEffect(() => {
+    if (!expandedTicketId) return;
+    function refreshTicketChat() {
+      if (expandedTicketId) {
+        setTicketChatMsgs((prev) => ({
+          ...prev,
+          [expandedTicketId]: getSupportChat(expandedTicketId),
+        }));
+      }
+    }
+    refreshTicketChat();
+    const id = setInterval(refreshTicketChat, 2000);
+    return () => clearInterval(id);
+  }, [expandedTicketId]);
 
   const bannedCount = students.filter((s) => s.isBanned).length;
 
@@ -147,6 +250,20 @@ export function AdminDashboard({ onLogout }: Props) {
       icon: Star,
       color: "text-primary",
       bg: "bg-primary/10",
+    },
+    {
+      label: "Support Tickets",
+      value: tickets.length,
+      icon: Ticket,
+      color: "text-teacher",
+      bg: "bg-teacher-light",
+    },
+    {
+      label: "Reports",
+      value: reports.length,
+      icon: Flag,
+      color: "text-destructive",
+      bg: "bg-destructive/10",
     },
   ];
 
@@ -236,6 +353,33 @@ export function AdminDashboard({ onLogout }: Props) {
               {reviews.length > 0 && (
                 <Badge variant="secondary" className="ml-1.5 text-xs">
                   {reviews.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger data-ocid="admin.teachers.tab" value="teachers">
+              Teachers
+            </TabsTrigger>
+            <TabsTrigger data-ocid="admin.parents.tab" value="parents">
+              Parents
+            </TabsTrigger>
+            <TabsTrigger data-ocid="admin.support.tab" value="support">
+              <Headphones className="w-3.5 h-3.5 mr-1" />
+              Support
+              {tickets.length > 0 && (
+                <Badge variant="secondary" className="ml-1.5 text-xs">
+                  {tickets.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger data-ocid="admin.reports.tab" value="reports">
+              <Flag className="w-3.5 h-3.5 mr-1" />
+              Reports
+              {reports.filter((r) => r.status === "pending").length > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="ml-1.5 text-xs bg-orange-100 text-orange-700"
+                >
+                  {reports.filter((r) => r.status === "pending").length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -744,6 +888,905 @@ export function AdminDashboard({ onLogout }: Props) {
                     ))}
                   </TableBody>
                 </Table>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Teachers Tab */}
+          <TabsContent value="teachers">
+            <div className="bg-card border border-border/60 rounded-xl overflow-hidden">
+              <div className="px-6 py-4 border-b border-border">
+                <h2 className="font-display text-lg font-bold">
+                  Teacher Management
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Ban, warn, or remove teachers from the platform
+                </p>
+              </div>
+              {(() => {
+                const teacherNames = Array.from(
+                  new Set(
+                    assignments.map((a) => a.teacherName).filter(Boolean),
+                  ),
+                );
+                if (teacherNames.length === 0) {
+                  return (
+                    <div
+                      data-ocid="admin.teachers.empty_state"
+                      className="flex flex-col items-center justify-center py-16 text-muted-foreground"
+                    >
+                      <Users className="w-10 h-10 mb-3 opacity-30" />
+                      <p className="text-sm">No teachers found yet</p>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="divide-y divide-border">
+                    {teacherNames.map((name, i) => {
+                      const banned = isTeacherBanned(name);
+                      const warnings = getWarningsForTeacher(name);
+                      const warnOpen = warnOpenTeacher[name] ?? false;
+                      return (
+                        <div
+                          key={name}
+                          data-ocid={`admin.teachers.row.${i + 1}`}
+                          className="px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3"
+                        >
+                          <div className="flex-1">
+                            <p className="font-semibold text-foreground">
+                              {name}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              {banned ? (
+                                <Badge
+                                  variant="destructive"
+                                  className="text-xs"
+                                >
+                                  Banned
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs text-green-600 border-green-300"
+                                >
+                                  Active
+                                </Badge>
+                              )}
+                              <span className="text-xs text-muted-foreground">
+                                {warnings.length} warning(s)
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {banned ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1 border-green-300 text-green-700 hover:bg-green-50"
+                                onClick={() => {
+                                  unbanTeacher(name);
+                                  refresh();
+                                  toast.success(`Unbanned ${name}`);
+                                }}
+                              >
+                                <CheckCircle2 className="w-3 h-3" />
+                                Unban
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1 border-destructive text-destructive hover:bg-destructive/10"
+                                onClick={() => {
+                                  banTeacher(name);
+                                  refresh();
+                                  toast.success(`Banned ${name}`);
+                                }}
+                              >
+                                <Ban className="w-3 h-3" />
+                                Ban
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs gap-1"
+                              onClick={() =>
+                                setWarnOpenTeacher((prev) => ({
+                                  ...prev,
+                                  [name]: !warnOpen,
+                                }))
+                              }
+                            >
+                              <AlertTriangle className="w-3 h-3" />
+                              Warn
+                            </Button>
+                            {warnings.length > 0 && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs gap-1"
+                                onClick={() => {
+                                  clearTeacherWarnings(name);
+                                  refresh();
+                                  toast.success("Warnings cleared");
+                                }}
+                              >
+                                Clear Warns
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="h-7 text-xs gap-1"
+                              onClick={() => {
+                                deleteTeacher(name);
+                                refresh();
+                                toast.success(`Deleted ${name}`);
+                              }}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Delete
+                            </Button>
+                          </div>
+                          {warnOpen && (
+                            <div className="w-full mt-2 flex gap-2">
+                              <Input
+                                data-ocid={`admin.teachers.warn.input.${i + 1}`}
+                                value={warnInputTeacher[name] ?? ""}
+                                onChange={(e) =>
+                                  setWarnInputTeacher((prev) => ({
+                                    ...prev,
+                                    [name]: e.target.value,
+                                  }))
+                                }
+                                placeholder="Warning message..."
+                                className="text-sm h-8"
+                              />
+                              <Button
+                                size="sm"
+                                className="h-8 text-xs"
+                                onClick={() => {
+                                  const msg = warnInputTeacher[name]?.trim();
+                                  if (!msg) return;
+                                  warnTeacher(name, msg);
+                                  setWarnInputTeacher((prev) => ({
+                                    ...prev,
+                                    [name]: "",
+                                  }));
+                                  setWarnOpenTeacher((prev) => ({
+                                    ...prev,
+                                    [name]: false,
+                                  }));
+                                  refresh();
+                                  toast.success(`Warning sent to ${name}`);
+                                }}
+                              >
+                                Send
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          </TabsContent>
+
+          {/* Parents Tab */}
+          <TabsContent value="parents">
+            <div className="bg-card border border-border/60 rounded-xl overflow-hidden">
+              <div className="px-6 py-4 border-b border-border">
+                <h2 className="font-display text-lg font-bold">
+                  Parent Management
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Manage parents who have used the support chat
+                </p>
+              </div>
+              {directChats.length === 0 ? (
+                <div
+                  data-ocid="admin.parents.empty_state"
+                  className="flex flex-col items-center justify-center py-16 text-muted-foreground"
+                >
+                  <Users className="w-10 h-10 mb-3 opacity-30" />
+                  <p className="text-sm">No parents found yet</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {directChats.map((chat, i) => {
+                    const banned = isParentBanned(chat.principal);
+                    return (
+                      <div
+                        key={chat.principal}
+                        data-ocid={`admin.parents.row.${i + 1}`}
+                        className="px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3"
+                      >
+                        <div className="flex-1">
+                          <p className="font-semibold text-foreground">
+                            {chat.senderName}
+                          </p>
+                          <p className="text-xs text-muted-foreground font-mono">
+                            {chat.principal.slice(0, 24)}…
+                          </p>
+                          <div className="mt-1">
+                            {banned ? (
+                              <Badge variant="destructive" className="text-xs">
+                                Banned
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant="outline"
+                                className="text-xs text-green-600 border-green-300"
+                              >
+                                Active
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {banned ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs gap-1 border-green-300 text-green-700 hover:bg-green-50"
+                              onClick={() => {
+                                unbanParent(chat.principal);
+                                refresh();
+                                toast.success("Unbanned");
+                              }}
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              Unban
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs gap-1 border-destructive text-destructive hover:bg-destructive/10"
+                              onClick={() => {
+                                banParent(chat.principal);
+                                refresh();
+                                toast.success("Banned");
+                              }}
+                            >
+                              <Ban className="w-3 h-3" />
+                              Ban
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-7 text-xs gap-1"
+                            onClick={() => {
+                              deleteParent(chat.principal);
+                              refresh();
+                              toast.success("Deleted");
+                            }}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Support Tab */}
+          <TabsContent value="support">
+            <div className="space-y-6">
+              {/* Direct Chats */}
+              <div className="bg-card border border-border/60 rounded-xl overflow-hidden">
+                <div className="px-6 py-4 border-b border-border">
+                  <h2 className="font-display text-lg font-bold flex items-center gap-2">
+                    <Headphones className="w-5 h-5 text-primary" />
+                    Direct Chats
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Private chats from teachers and parents
+                  </p>
+                </div>
+                {directChats.length === 0 ? (
+                  <div
+                    data-ocid="admin.support.chats.empty_state"
+                    className="flex flex-col items-center justify-center py-12 text-muted-foreground"
+                  >
+                    <Headphones className="w-8 h-8 mb-2 opacity-30" />
+                    <p className="text-sm">No direct chats yet</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {directChats.map((chat, i) => {
+                      const isExpanded =
+                        expandedChatPrincipal === chat.principal;
+                      const msgs = directChatMsgs[chat.principal] ?? [];
+                      return (
+                        <div
+                          key={chat.principal}
+                          data-ocid={`admin.support.chat.item.${i + 1}`}
+                        >
+                          <button
+                            type="button"
+                            className="w-full px-6 py-3 flex items-center justify-between cursor-pointer hover:bg-muted/30 text-left"
+                            onClick={() =>
+                              setExpandedChatPrincipal(
+                                isExpanded ? null : chat.principal,
+                              )
+                            }
+                          >
+                            <div>
+                              <p className="font-semibold text-sm">
+                                {chat.senderName}
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate max-w-xs">
+                                {chat.lastMsg}
+                              </p>
+                            </div>
+                            {isExpanded ? (
+                              <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </button>
+                          {isExpanded && (
+                            <div className="border-t border-border bg-muted/20 px-6 py-4">
+                              <ScrollArea className="h-48 mb-3">
+                                {msgs.length === 0 ? (
+                                  <p className="text-xs text-muted-foreground text-center py-4">
+                                    No messages yet
+                                  </p>
+                                ) : (
+                                  <div className="space-y-2">
+                                    {msgs.map((m) => (
+                                      <div
+                                        key={m.id}
+                                        className={`flex ${m.senderRole === "admin" ? "justify-end" : "justify-start"}`}
+                                      >
+                                        <div
+                                          className={`max-w-[80%] rounded-xl px-3 py-1.5 text-sm ${m.senderRole === "admin" ? "bg-primary text-primary-foreground" : "bg-white border border-border"}`}
+                                        >
+                                          {m.senderRole !== "admin" && (
+                                            <p className="text-[10px] font-bold text-muted-foreground mb-0.5">
+                                              {m.senderName}
+                                            </p>
+                                          )}
+                                          <p style={{ color: "#111" }}>
+                                            {m.text}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </ScrollArea>
+                              <div className="flex gap-2">
+                                <Input
+                                  data-ocid={`admin.support.chat.input.${i + 1}`}
+                                  value={directChatInput[chat.principal] ?? ""}
+                                  onChange={(e) =>
+                                    setDirectChatInput((prev) => ({
+                                      ...prev,
+                                      [chat.principal]: e.target.value,
+                                    }))
+                                  }
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      const text =
+                                        directChatInput[chat.principal]?.trim();
+                                      if (text) {
+                                        sendDirectMessage(
+                                          chat.principal,
+                                          "admin",
+                                          "Admin",
+                                          text,
+                                        );
+                                        setDirectChatInput((prev) => ({
+                                          ...prev,
+                                          [chat.principal]: "",
+                                        }));
+                                        setDirectChatMsgs((prev) => ({
+                                          ...prev,
+                                          [chat.principal]: getSupportChat(
+                                            chat.principal,
+                                          ),
+                                        }));
+                                      }
+                                    }
+                                  }}
+                                  placeholder="Reply to this user..."
+                                  className="text-sm"
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    const text =
+                                      directChatInput[chat.principal]?.trim();
+                                    if (!text) return;
+                                    sendDirectMessage(
+                                      chat.principal,
+                                      "admin",
+                                      "Admin",
+                                      text,
+                                    );
+                                    setDirectChatInput((prev) => ({
+                                      ...prev,
+                                      [chat.principal]: "",
+                                    }));
+                                    setDirectChatMsgs((prev) => ({
+                                      ...prev,
+                                      [chat.principal]: getSupportChat(
+                                        chat.principal,
+                                      ),
+                                    }));
+                                  }}
+                                >
+                                  <Send className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Tickets */}
+              <div className="bg-card border border-border/60 rounded-xl overflow-hidden">
+                <div className="px-6 py-4 border-b border-border">
+                  <h2 className="font-display text-lg font-bold flex items-center gap-2">
+                    <Ticket className="w-5 h-5 text-primary" />
+                    Support Tickets
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Tickets submitted by teachers and parents
+                  </p>
+                </div>
+                {tickets.length === 0 ? (
+                  <div
+                    data-ocid="admin.support.tickets.empty_state"
+                    className="flex flex-col items-center justify-center py-12 text-muted-foreground"
+                  >
+                    <Ticket className="w-8 h-8 mb-2 opacity-30" />
+                    <p className="text-sm">No tickets yet</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {tickets.map((ticket, i) => {
+                      const isExpanded = expandedTicketId === ticket.id;
+                      const msgs = ticketChatMsgs[ticket.id] ?? [];
+                      return (
+                        <div
+                          key={ticket.id}
+                          data-ocid={`admin.support.ticket.item.${i + 1}`}
+                        >
+                          <div className="px-6 py-3 flex items-center justify-between">
+                            <div className="flex-1">
+                              <p className="font-semibold text-sm">
+                                {ticket.subject}
+                              </p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-xs text-muted-foreground">
+                                  {ticket.senderName}
+                                </span>
+                                <Badge
+                                  variant="outline"
+                                  className={`text-[10px] px-1.5 ${ticket.status === "open" ? "text-green-600 border-green-300" : "text-gray-500"}`}
+                                >
+                                  {ticket.status}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {ticket.status === "open" && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 text-xs"
+                                  onClick={() => {
+                                    closeTicket(ticket.id);
+                                    refresh();
+                                    toast.success("Ticket closed");
+                                  }}
+                                >
+                                  Close
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2"
+                                onClick={() =>
+                                  setExpandedTicketId(
+                                    isExpanded ? null : ticket.id,
+                                  )
+                                }
+                              >
+                                {isExpanded ? (
+                                  <ChevronUp className="w-4 h-4" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                          {isExpanded && (
+                            <div className="border-t border-border bg-muted/20 px-6 py-4">
+                              <p className="text-sm text-muted-foreground mb-3 italic">
+                                "{ticket.message}"
+                              </p>
+                              <ScrollArea className="h-40 mb-3">
+                                {msgs.length === 0 ? (
+                                  <p className="text-xs text-muted-foreground text-center py-4">
+                                    No replies yet
+                                  </p>
+                                ) : (
+                                  <div className="space-y-2">
+                                    {msgs.map((m) => (
+                                      <div
+                                        key={m.id}
+                                        className={`flex ${m.senderRole === "admin" ? "justify-end" : "justify-start"}`}
+                                      >
+                                        <div
+                                          className={`max-w-[80%] rounded-xl px-3 py-1.5 text-sm ${m.senderRole === "admin" ? "bg-primary text-primary-foreground" : "bg-white border border-border"}`}
+                                        >
+                                          {m.senderRole !== "admin" && (
+                                            <p className="text-[10px] font-bold text-muted-foreground mb-0.5">
+                                              {m.senderName}
+                                            </p>
+                                          )}
+                                          <p style={{ color: "#111" }}>
+                                            {m.text}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </ScrollArea>
+                              <div className="flex gap-2">
+                                <Input
+                                  data-ocid={`admin.support.ticket.input.${i + 1}`}
+                                  value={ticketChatInput[ticket.id] ?? ""}
+                                  onChange={(e) =>
+                                    setTicketChatInput((prev) => ({
+                                      ...prev,
+                                      [ticket.id]: e.target.value,
+                                    }))
+                                  }
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      const text =
+                                        ticketChatInput[ticket.id]?.trim();
+                                      if (text) {
+                                        sendSupportMessage(
+                                          ticket.id,
+                                          "admin",
+                                          "Admin",
+                                          text,
+                                        );
+                                        setTicketChatInput((prev) => ({
+                                          ...prev,
+                                          [ticket.id]: "",
+                                        }));
+                                        setTicketChatMsgs((prev) => ({
+                                          ...prev,
+                                          [ticket.id]: getSupportChat(
+                                            ticket.id,
+                                          ),
+                                        }));
+                                      }
+                                    }
+                                  }}
+                                  placeholder="Reply to ticket..."
+                                  className="text-sm"
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    const text =
+                                      ticketChatInput[ticket.id]?.trim();
+                                    if (!text) return;
+                                    sendSupportMessage(
+                                      ticket.id,
+                                      "admin",
+                                      "Admin",
+                                      text,
+                                    );
+                                    setTicketChatInput((prev) => ({
+                                      ...prev,
+                                      [ticket.id]: "",
+                                    }));
+                                    setTicketChatMsgs((prev) => ({
+                                      ...prev,
+                                      [ticket.id]: getSupportChat(ticket.id),
+                                    }));
+                                  }}
+                                >
+                                  <Send className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Reports Tab */}
+          <TabsContent value="reports">
+            <div className="bg-card border border-border/60 rounded-xl overflow-hidden">
+              <div className="px-6 py-4 border-b border-border">
+                <h2 className="font-display text-lg font-bold flex items-center gap-2">
+                  <Flag className="w-5 h-5 text-orange-500" />
+                  User Reports
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Reports submitted by students, teachers, and parents
+                </p>
+              </div>
+              {reports.length === 0 ? (
+                <div
+                  data-ocid="admin.reports.empty_state"
+                  className="flex flex-col items-center justify-center py-16 text-muted-foreground"
+                >
+                  <Flag className="w-10 h-10 mb-3 opacity-30" />
+                  <p className="text-sm">No reports yet</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {reports.map((report, i) => {
+                    const warnOpen = warnOpenReport[report.id] ?? false;
+                    return (
+                      <div
+                        key={report.id}
+                        data-ocid={`admin.reports.item.${i + 1}`}
+                        className="px-6 py-4"
+                      >
+                        <div className="flex items-start justify-between gap-4 mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge
+                                variant="outline"
+                                className="text-xs capitalize"
+                              >
+                                {report.reporterRole}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                reported a
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className="text-xs capitalize border-orange-300 text-orange-700"
+                              >
+                                {report.reportedUserType}
+                              </Badge>
+                            </div>
+                            <p className="font-semibold text-sm text-foreground">
+                              {report.reportedUserName}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Reported by: {report.reporterName}
+                            </p>
+                            <p className="text-sm text-foreground mt-1.5 bg-muted/40 rounded-lg px-3 py-1.5">
+                              {report.reason}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {new Date(report.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <Badge
+                            className={`text-xs shrink-0 ${report.status === "pending" ? "bg-orange-100 text-orange-700 border-orange-200" : "bg-green-100 text-green-700 border-green-200"}`}
+                            variant="outline"
+                          >
+                            {report.status}
+                          </Badge>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {report.reportedUserType === "student" && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1 border-destructive text-destructive hover:bg-destructive/10"
+                                onClick={() => {
+                                  banStudent(report.reportedUserName);
+                                  markReportActioned(report.id);
+                                  refresh();
+                                  toast.success(
+                                    `Banned student ${report.reportedUserName}`,
+                                  );
+                                }}
+                              >
+                                <Ban className="w-3 h-3" />
+                                Ban
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1"
+                                onClick={() =>
+                                  setWarnOpenReport((prev) => ({
+                                    ...prev,
+                                    [report.id]: !warnOpen,
+                                  }))
+                                }
+                              >
+                                <AlertTriangle className="w-3 h-3" />
+                                Warn
+                              </Button>
+                            </>
+                          )}
+                          {report.reportedUserType === "teacher" && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1 border-destructive text-destructive hover:bg-destructive/10"
+                                onClick={() => {
+                                  banTeacher(report.reportedUserName);
+                                  markReportActioned(report.id);
+                                  refresh();
+                                  toast.success(
+                                    `Banned teacher ${report.reportedUserName}`,
+                                  );
+                                }}
+                              >
+                                <Ban className="w-3 h-3" />
+                                Ban
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1"
+                                onClick={() =>
+                                  setWarnOpenReport((prev) => ({
+                                    ...prev,
+                                    [report.id]: !warnOpen,
+                                  }))
+                                }
+                              >
+                                <AlertTriangle className="w-3 h-3" />
+                                Warn
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="h-7 text-xs gap-1"
+                                onClick={() => {
+                                  deleteTeacher(report.reportedUserName);
+                                  markReportActioned(report.id);
+                                  refresh();
+                                  toast.success(
+                                    `Deleted teacher ${report.reportedUserName}`,
+                                  );
+                                }}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                Delete
+                              </Button>
+                            </>
+                          )}
+                          {report.reportedUserType === "parent" && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1 border-destructive text-destructive hover:bg-destructive/10"
+                                onClick={() => {
+                                  banParent(report.reportedUserName);
+                                  markReportActioned(report.id);
+                                  refresh();
+                                  toast.success("Banned");
+                                }}
+                              >
+                                <Ban className="w-3 h-3" />
+                                Ban
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="h-7 text-xs gap-1"
+                                onClick={() => {
+                                  deleteParent(report.reportedUserName);
+                                  markReportActioned(report.id);
+                                  refresh();
+                                  toast.success("Deleted");
+                                }}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                Delete
+                              </Button>
+                            </>
+                          )}
+                          {report.status === "pending" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs gap-1 border-green-300 text-green-700 hover:bg-green-50"
+                              onClick={() => {
+                                markReportActioned(report.id);
+                                refresh();
+                                toast.success("Marked as actioned");
+                              }}
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              Mark Actioned
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs gap-1 text-muted-foreground"
+                            onClick={() => {
+                              deleteReport(report.id);
+                              refresh();
+                              toast.success("Report dismissed");
+                            }}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            Dismiss
+                          </Button>
+                        </div>
+                        {warnOpen && (
+                          <div className="mt-2 flex gap-2">
+                            <Input
+                              data-ocid={`admin.reports.warn.input.${i + 1}`}
+                              value={warnInputReport[report.id] ?? ""}
+                              onChange={(e) =>
+                                setWarnInputReport((prev) => ({
+                                  ...prev,
+                                  [report.id]: e.target.value,
+                                }))
+                              }
+                              placeholder="Warning message..."
+                              className="text-sm h-8"
+                            />
+                            <Button
+                              size="sm"
+                              className="h-8 text-xs"
+                              onClick={() => {
+                                const msg = warnInputReport[report.id]?.trim();
+                                if (!msg) return;
+                                if (report.reportedUserType === "student") {
+                                  warnStudent(report.reportedUserName, msg);
+                                } else if (
+                                  report.reportedUserType === "teacher"
+                                ) {
+                                  warnTeacher(report.reportedUserName, msg);
+                                }
+                                markReportActioned(report.id);
+                                setWarnInputReport((prev) => ({
+                                  ...prev,
+                                  [report.id]: "",
+                                }));
+                                setWarnOpenReport((prev) => ({
+                                  ...prev,
+                                  [report.id]: false,
+                                }));
+                                refresh();
+                                toast.success("Warning sent");
+                              }}
+                            >
+                              Send
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </TabsContent>

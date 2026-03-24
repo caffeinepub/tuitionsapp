@@ -15,7 +15,9 @@ import {
   Calendar,
   CheckCircle2,
   ClipboardList,
+  Flag,
   GraduationCap,
+  Headphones,
   MessageSquare,
   Star,
   User,
@@ -32,12 +34,15 @@ import {
   markChatRead,
 } from "../utils/assignmentStorage";
 import { addReview } from "../utils/reviewStorage";
+import { isParentBanned } from "../utils/supportStorage";
 import {
   type TeacherProfile,
   getTeacherProfileByName,
 } from "../utils/teacherProfileStorage";
 import { ChatWindow } from "./ChatWindow";
 import { DashboardNav } from "./DashboardNav";
+import { ReportUser } from "./ReportUser";
+import { SupportPortal } from "./SupportPortal";
 
 type Props = {
   onLogout: () => void;
@@ -51,6 +56,27 @@ export function ParentDashboard({
   linkedStudentUsername,
 }: Props) {
   const childName = linkedStudentName || "your child";
+  const parentPrincipal =
+    localStorage.getItem("tuitions_parent_principal") ??
+    linkedStudentUsername ??
+    "";
+
+  const [supportOpen, setSupportOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+
+  // Parent ban check
+  useEffect(() => {
+    function checkBan() {
+      const p = localStorage.getItem("tuitions_parent_principal") ?? "";
+      if (p && isParentBanned(p)) {
+        toast.error("Your account has been banned by the admin.");
+        onLogout();
+      }
+    }
+    checkBan();
+    const id = setInterval(checkBan, 5000);
+    return () => clearInterval(id);
+  }, [onLogout]);
 
   const [grades, setGrades] = useState<Grade[]>(() =>
     linkedStudentUsername ? getGradesForStudent(linkedStudentUsername) : [],
@@ -168,6 +194,30 @@ export function ParentDashboard({
         onLogout={onLogout}
         headerClass="dashboard-header-parent"
       />
+
+      {/* Support & Report action row */}
+      <div className="dashboard-header-parent px-4 sm:px-6 pt-2 pb-0">
+        <div className="max-w-6xl mx-auto flex justify-end gap-2">
+          <button
+            type="button"
+            data-ocid="parent.support.button"
+            onClick={() => setSupportOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white text-xs font-semibold transition-colors"
+          >
+            <Headphones className="w-3.5 h-3.5" />
+            Support
+          </button>
+          <button
+            type="button"
+            data-ocid="parent.report.open_modal_button"
+            onClick={() => setReportOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white text-xs font-semibold transition-colors"
+          >
+            <Flag className="w-3.5 h-3.5" />
+            Report User
+          </button>
+        </div>
+      </div>
 
       {/* Welcome banner */}
       <div className="dashboard-header-parent px-4 sm:px-6 pb-8">
@@ -606,6 +656,24 @@ export function ParentDashboard({
           caffeine.ai
         </a>
       </footer>
+      {/* Support Portal */}
+      {supportOpen && (
+        <SupportPortal
+          senderRole="parent"
+          senderName={`Parent of ${childName}`}
+          senderPrincipal={parentPrincipal}
+          onClose={() => setSupportOpen(false)}
+        />
+      )}
+
+      {/* Report User */}
+      {reportOpen && (
+        <ReportUser
+          reporterRole="parent"
+          reporterName={`Parent of ${childName}`}
+          onClose={() => setReportOpen(false)}
+        />
+      )}
     </div>
   );
 }

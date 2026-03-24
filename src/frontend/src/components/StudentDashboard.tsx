@@ -15,11 +15,16 @@ import {
   BookOpen,
   CalendarClock,
   CheckCircle,
+  ChevronDown,
+  ChevronUp,
   ClipboardCheck,
   ClipboardList,
+  Flag,
   GraduationCap,
   KeyRound,
+  Megaphone,
   MessageSquare,
+  School,
   Video,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -36,16 +41,25 @@ import {
   saveCallBooking,
 } from "../utils/assignmentStorage";
 import {
+  type ClassAnnouncement,
+  type TeacherClass,
+  getClassesForStudent,
+  joinClassByCode,
+} from "../utils/classStorage";
+import {
   type Quiz,
   type QuizAssignment,
   getAssignedQuizzesForStudent,
   getAttemptsUsed,
 } from "../utils/quizStorage";
 import { getOrCreateVerificationCode } from "../utils/studentStorage";
+import { getWarningsForStudent } from "../utils/supportStorage";
 import { AiDoubtBot } from "./AiDoubtBot";
 import { ChatWindow } from "./ChatWindow";
 import { DashboardNav } from "./DashboardNav";
+import { LearningGames } from "./LearningGames";
 import { QuizTaker } from "./QuizTaker";
+import { ReportUser } from "./ReportUser";
 
 type Props = {
   student: StudentUser;
@@ -57,6 +71,9 @@ export function StudentDashboard({ student, onLogout }: Props) {
     () => getOrCreateVerificationCode(student.username),
     [student.username],
   );
+
+  const [reportOpen, setReportOpen] = useState(false);
+  const [studentWarning, setStudentWarning] = useState<string | null>(null);
 
   // All teacher-created assignments
   const [assignments, setAssignments] = useState<Assignment[]>(() =>
@@ -116,6 +133,35 @@ export function StudentDashboard({ student, onLogout }: Props) {
     return () => clearInterval(timer);
   }, [student.username]);
 
+  // My Classes state
+  const [myClasses, setMyClasses] = useState<TeacherClass[]>(() =>
+    getClassesForStudent(student.username),
+  );
+  const [joinCodeInput, setJoinCodeInput] = useState("");
+  const [classSectionOpen, setClassSectionOpen] = useState(true);
+
+  // Auto-refresh classes every 5 seconds
+  useEffect(() => {
+    function refreshClasses() {
+      setMyClasses(getClassesForStudent(student.username));
+    }
+    refreshClasses();
+    const timer = setInterval(refreshClasses, 5000);
+    return () => clearInterval(timer);
+  }, [student.username]);
+
+  function handleJoinClass() {
+    if (!joinCodeInput.trim()) return;
+    const result = joinClassByCode(joinCodeInput.trim(), student.username);
+    if (result.success) {
+      setMyClasses(getClassesForStudent(student.username));
+      setJoinCodeInput("");
+      toast.success(result.message);
+    } else {
+      toast.error(result.message);
+    }
+  }
+
   // Assignment search
   const [assignmentSearch, setAssignmentSearch] = useState("");
   const filteredAssignments = useMemo(() => {
@@ -173,6 +219,21 @@ export function StudentDashboard({ student, onLogout }: Props) {
     setSelectedAssignment(null);
   }
 
+  // Student warning poll
+  useEffect(() => {
+    function checkWarn() {
+      const warnings = getWarningsForStudent(student.username);
+      if (warnings.length > 0) {
+        setStudentWarning(warnings[warnings.length - 1].message);
+      } else {
+        setStudentWarning(null);
+      }
+    }
+    checkWarn();
+    const id = setInterval(checkWarn, 5000);
+    return () => clearInterval(id);
+  }, [student.username]);
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <DashboardNav
@@ -181,6 +242,30 @@ export function StudentDashboard({ student, onLogout }: Props) {
         onLogout={onLogout}
         headerClass="dashboard-header-student"
       />
+
+      {/* Student warning banner */}
+      {studentWarning && (
+        <div className="bg-amber-100 border-b border-amber-300 px-4 py-2 flex items-center gap-2">
+          <span className="text-amber-800 text-sm font-medium">
+            ⚠️ Admin Warning: {studentWarning}
+          </span>
+        </div>
+      )}
+
+      {/* Report action */}
+      <div className="dashboard-header-student px-4 sm:px-6 pt-2 pb-0">
+        <div className="max-w-6xl mx-auto flex justify-end">
+          <button
+            type="button"
+            data-ocid="student.report.open_modal_button"
+            onClick={() => setReportOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white text-xs font-semibold transition-colors"
+          >
+            <Flag className="w-3.5 h-3.5" />
+            Report User
+          </button>
+        </div>
+      </div>
 
       {/* Welcome banner */}
       <div className="dashboard-header-student px-4 sm:px-6 pb-8">
@@ -398,6 +483,136 @@ export function StudentDashboard({ student, onLogout }: Props) {
           )}
         </section>
 
+        {/* My Classes */}
+        <section className="mb-8">
+          <button
+            type="button"
+            data-ocid="student.classes.section.toggle"
+            onClick={() => setClassSectionOpen((o) => !o)}
+            className="flex items-center gap-2 w-full mb-4 group"
+          >
+            <School className="w-5 h-5 text-primary" />
+            <h2 className="font-display text-xl font-bold text-foreground">
+              My Classes
+            </h2>
+            {classSectionOpen ? (
+              <ChevronUp className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
+            )}
+          </button>
+
+          {classSectionOpen && (
+            <div className="space-y-4">
+              {/* Join a class */}
+              <div className="bg-card rounded-xl border border-border/60 shadow-xs p-4">
+                <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+                  <School className="w-4 h-4 text-primary" />
+                  Join a Class
+                </h3>
+                <div className="flex gap-2">
+                  <input
+                    data-ocid="student.classes.join.input"
+                    type="text"
+                    placeholder="Enter class code..."
+                    className="flex-1 px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-primary/50 font-mono tracking-wider uppercase"
+                    value={joinCodeInput}
+                    onChange={(e) =>
+                      setJoinCodeInput(e.target.value.toUpperCase())
+                    }
+                    onKeyDown={(e) => e.key === "Enter" && handleJoinClass()}
+                    maxLength={6}
+                  />
+                  <button
+                    data-ocid="student.classes.join.button"
+                    type="button"
+                    onClick={handleJoinClass}
+                    disabled={!joinCodeInput.trim()}
+                    className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+                  >
+                    Join
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Ask your teacher for the 6-character class code.
+                </p>
+              </div>
+
+              {/* Enrolled classes */}
+              {myClasses.length === 0 ? (
+                <div
+                  data-ocid="student.classes.empty_state"
+                  className="bg-card rounded-xl border border-border/60 shadow-xs p-6 text-center"
+                >
+                  <School className="w-8 h-8 text-muted-foreground mx-auto mb-2 opacity-40" />
+                  <p className="text-sm text-muted-foreground">
+                    You haven't joined any classes yet.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {myClasses.map((cls, i) => (
+                    <div
+                      key={cls.id}
+                      data-ocid={`student.classes.item.${i + 1}`}
+                      className="bg-card rounded-xl border border-border/60 shadow-xs p-4"
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div>
+                          <h4 className="font-bold text-sm text-foreground">
+                            {cls.name}
+                          </h4>
+                          <p className="text-xs text-muted-foreground">
+                            {cls.subject}
+                          </p>
+                        </div>
+                        <span className="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-md tracking-widest">
+                          {cls.classCode}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <School className="w-3 h-3" />
+                        Teacher: {cls.teacherName}
+                      </p>
+                      {/* Announcements */}
+                      {cls.announcements.length > 0 && (
+                        <div className="mt-3 border-t border-border/40 pt-2">
+                          <p className="text-xs font-semibold text-foreground mb-1.5 flex items-center gap-1">
+                            <Megaphone className="w-3 h-3 text-primary" />
+                            Announcements
+                          </p>
+                          <div className="space-y-1.5">
+                            {cls.announcements
+                              .slice(0, 3)
+                              .map((ann: ClassAnnouncement) => (
+                                <div
+                                  key={ann.id}
+                                  className="bg-muted/50 rounded-md px-2.5 py-1.5"
+                                >
+                                  <p className="text-xs text-foreground">
+                                    {ann.text}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    {new Date(ann.createdAt).toLocaleString()}
+                                  </p>
+                                </div>
+                              ))}
+                            {cls.announcements.length > 3 && (
+                              <p className="text-xs text-muted-foreground">
+                                +{cls.announcements.length - 3} more
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+
         {/* My Booked Calls */}
         {myBookings.length > 0 && (
           <section className="mb-8">
@@ -522,6 +737,7 @@ export function StudentDashboard({ student, onLogout }: Props) {
             </div>
           )}
         </section>
+
         {/* My Quizzes */}
         <section className="mb-8">
           <h2 className="font-display text-xl font-bold text-foreground mb-4 flex items-center gap-2">
@@ -626,6 +842,14 @@ export function StudentDashboard({ student, onLogout }: Props) {
               })}
             </div>
           )}
+        </section>
+
+        {/* Learning Games */}
+        <section className="mb-8">
+          <h2 className="font-display text-xl font-bold text-foreground mb-4">
+            Learning Games 🎮
+          </h2>
+          <LearningGames />
         </section>
       </main>
 
@@ -733,6 +957,14 @@ export function StudentDashboard({ student, onLogout }: Props) {
           assignment={takingQuiz.assignment}
           studentUsername={student.username}
           studentName={student.name}
+        />
+      )}
+
+      {reportOpen && (
+        <ReportUser
+          reporterRole="student"
+          reporterName={student.name}
+          onClose={() => setReportOpen(false)}
         />
       )}
 
