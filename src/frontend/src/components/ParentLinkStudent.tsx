@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { KeyRound, Loader2, Search, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createActorWithConfig } from "../config";
 import {
   getStudentUsers,
   saveParentLink,
@@ -26,7 +27,7 @@ export function ParentLinkStudent({
   const [code, setCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  function handleLink(e: React.FormEvent) {
+  async function handleLink(e: React.FormEvent) {
     e.preventDefault();
     if (!username.trim() || !code.trim()) {
       toast.error("Please enter both the student username and the code.");
@@ -35,20 +36,54 @@ export function ParentLinkStudent({
 
     setIsLoading(true);
 
-    // Simulate brief async
-    setTimeout(() => {
+    try {
+      // First check localStorage
       const students = getStudentUsers();
       const student = students.find(
         (s) => s.username.toLowerCase() === username.trim().toLowerCase(),
       );
 
+      let studentName = student?.name ?? "";
+      let studentUsername = student?.username ?? username.trim().toLowerCase();
+
+      // If not found locally, check the backend canister (cross-device support)
       if (!student) {
-        toast.error("No student found with that username.");
-        setIsLoading(false);
-        return;
+        try {
+          const actor = (await createActorWithConfig()) as any;
+          const result = await actor.getStudentPublicByUsername(
+            username.trim().toLowerCase(),
+          );
+          // ?(Text, Text) in Motoko = [] | [[string, string]] in JS
+          if (result && (result as unknown[]).length > 0) {
+            const tuple = (result as unknown as [string, string][])[0];
+            studentUsername = tuple[0];
+            studentName = tuple[1];
+          } else {
+            toast.error("No student found with that username.");
+            setIsLoading(false);
+            return;
+          }
+        } catch {
+          toast.error("No student found with that username.");
+          setIsLoading(false);
+          return;
+        }
       }
 
-      const valid = verifyStudentCode(username.trim(), code.trim());
+      // Verify code — check localStorage first, then backend
+      let valid = verifyStudentCode(username.trim(), code.trim());
+      if (!valid) {
+        try {
+          const actor = (await createActorWithConfig()) as any;
+          valid = await actor.checkVerificationCode(
+            username.trim().toLowerCase(),
+            code.trim(),
+          );
+        } catch {
+          valid = false;
+        }
+      }
+
       if (!valid) {
         toast.error(
           "Verification code is incorrect. Ask your child for their code from their dashboard.",
@@ -57,10 +92,13 @@ export function ParentLinkStudent({
         return;
       }
 
-      saveParentLink(parentPrincipal, student.username);
-      toast.success(`Linked to ${student.name}'s account!`);
-      onLinked(student.username, student.name);
-    }, 600);
+      saveParentLink(parentPrincipal, studentUsername);
+      toast.success(`Linked to ${studentName}'s account!`);
+      onLinked(studentUsername, studentName);
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+      setIsLoading(false);
+    }
   }
 
   return (

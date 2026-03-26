@@ -95,6 +95,7 @@ import {
 } from "../utils/teacherProfileStorage";
 import { ChatWindow } from "./ChatWindow";
 import { DashboardNav } from "./DashboardNav";
+import { FreeTimeRobot } from "./FreeTimeRobot";
 import { QuizBuilder } from "./QuizBuilder";
 import { QuizResults } from "./QuizResults";
 import { ReportUser } from "./ReportUser";
@@ -2043,6 +2044,7 @@ export function TeacherDashboard({ onLogout }: Props) {
           caffeine.ai
         </a>
       </footer>
+      <FreeTimeRobot mode="teacher" />
     </div>
   );
 }

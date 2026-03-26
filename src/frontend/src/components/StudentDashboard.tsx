@@ -30,6 +30,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { StudentUser } from "../App";
+import { createActorWithConfig } from "../config";
 import {
   type Assignment,
   type CallBooking,
@@ -57,6 +58,7 @@ import { getWarningsForStudent } from "../utils/supportStorage";
 import { AiDoubtBot } from "./AiDoubtBot";
 import { ChatWindow } from "./ChatWindow";
 import { DashboardNav } from "./DashboardNav";
+import { FreeTimeRobot } from "./FreeTimeRobot";
 import { LearningGames } from "./LearningGames";
 import { QuizTaker } from "./QuizTaker";
 import { ReportUser } from "./ReportUser";
@@ -72,6 +74,20 @@ export function StudentDashboard({ student, onLogout }: Props) {
     [student.username],
   );
 
+  // Sync verification code to backend on mount for cross-device parent linking
+  useEffect(() => {
+    createActorWithConfig()
+      .then((actor: any) => {
+        actor
+          .setVerificationCode(student.username.toLowerCase(), verificationCode)
+          .catch(() => {
+            /* ignore backend sync errors */
+          });
+      })
+      .catch(() => {
+        /* ignore */
+      });
+  }, [student.username, verificationCode]);
   const [reportOpen, setReportOpen] = useState(false);
   const [studentWarning, setStudentWarning] = useState<string | null>(null);
 
@@ -969,6 +985,7 @@ export function StudentDashboard({ student, onLogout }: Props) {
       )}
 
       <AiDoubtBot />
+      <FreeTimeRobot mode="student" />
     </div>
   );
 }

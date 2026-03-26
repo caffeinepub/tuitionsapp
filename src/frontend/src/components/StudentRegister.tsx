@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { AlertCircle, GraduationCap, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createActorWithConfig } from "../config";
 import { saveStudentUser } from "../utils/studentStorage";
 import { AuthLayout } from "./AuthLayout";
 
@@ -44,6 +45,23 @@ export function StudentRegister({ onRegistered, onBack }: Props) {
         password,
       });
       if (result.success) {
+        // Sync to backend canister (fire and forget) for cross-device access
+        createActorWithConfig()
+          .then((actor: any) => {
+            actor
+              .registerStudent(
+                username.trim().toLowerCase(),
+                name.trim(),
+                password,
+              )
+              .catch(() => {
+                /* ignore backend sync errors */
+              });
+          })
+          .catch(() => {
+            /* ignore */
+          });
+
         toast.success(
           "Account created! Please log in with your new credentials.",
         );

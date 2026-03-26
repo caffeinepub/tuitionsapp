@@ -10,6 +10,8 @@ import {
   ChevronUp,
   Headphones,
   Send,
+  ThumbsDown,
+  ThumbsUp,
   Ticket,
   X,
 } from "lucide-react";
@@ -23,6 +25,7 @@ import {
   getTicketsForSender,
   sendDirectMessage,
   sendSupportMessage,
+  submitHelpyFeedback,
   submitTicket,
 } from "../utils/supportStorage";
 
@@ -33,7 +36,12 @@ type Props = {
   onClose: () => void;
 };
 
-type HelpyMessage = { id: string; from: "user" | "helpy"; text: string };
+type HelpyMessage = {
+  id: string;
+  from: "user" | "helpy";
+  text: string;
+  feedbackGiven?: boolean;
+};
 
 function getHelpyResponse(input: string): string {
   const q = input.toLowerCase();
@@ -137,7 +145,10 @@ export function SupportPortal({
   // Helpy state
   const [helpyMessages, setHelpyMessages] = useState<HelpyMessage[]>([]);
   const [helpyInput, setHelpyInput] = useState("");
+  const [thumbsDownId, setThumbsDownId] = useState<string | null>(null);
+  const [thumbsDownReason, setThumbsDownReason] = useState("");
   const helpyEndRef = useRef<HTMLDivElement>(null);
+  const helpyScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function refresh() {
@@ -547,7 +558,15 @@ export function SupportPortal({
               </div>
             </div>
 
-            <ScrollArea className="flex-1 px-3 py-2">
+            {/* Helpy messages — native scrollbar always visible */}
+            <div
+              ref={helpyScrollRef}
+              className="flex-1 px-3 py-2 overflow-y-scroll"
+              style={{
+                scrollbarWidth: "thin",
+                scrollbarColor: "#7c3aed55 transparent",
+              }}
+            >
               {/* Welcome bubble (always shown) */}
               <div className="flex justify-start mb-2">
                 <div className="flex items-start gap-1.5 max-w-[85%]">
@@ -596,13 +615,103 @@ export function SupportPortal({
                           <div className="w-6 h-6 rounded-full bg-violet-500/20 flex items-center justify-center text-xs shrink-0 mt-0.5">
                             🤖
                           </div>
-                          <div className="bg-muted rounded-2xl rounded-tl-sm px-2.5 py-1.5">
-                            <p className="text-[10px] font-semibold text-violet-600 mb-0.5">
-                              Helpy
-                            </p>
-                            <p className="text-xs text-foreground leading-snug">
-                              {msg.text}
-                            </p>
+                          <div>
+                            <div className="bg-muted rounded-2xl rounded-tl-sm px-2.5 py-1.5">
+                              <p className="text-[10px] font-semibold text-violet-600 mb-0.5">
+                                Helpy
+                              </p>
+                              <p className="text-xs text-foreground leading-snug">
+                                {msg.text}
+                              </p>
+                            </div>
+                            {!msg.feedbackGiven && (
+                              <div className="flex items-center gap-1.5 mt-1 pl-1">
+                                <button
+                                  type="button"
+                                  title="Helpful"
+                                  onClick={() => {
+                                    submitHelpyFeedback({
+                                      messageId: msg.id,
+                                      helpyReply: msg.text,
+                                      rating: "up",
+                                      senderRole,
+                                      senderName,
+                                    });
+                                    setHelpyMessages((prev) =>
+                                      prev.map((m) =>
+                                        m.id === msg.id
+                                          ? { ...m, feedbackGiven: true }
+                                          : m,
+                                      ),
+                                    );
+                                    setThumbsDownId(null);
+                                  }}
+                                  className="text-muted-foreground hover:text-green-600 transition-colors"
+                                >
+                                  <ThumbsUp className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  title="Not helpful"
+                                  onClick={() => {
+                                    setThumbsDownId(
+                                      thumbsDownId === msg.id ? null : msg.id,
+                                    );
+                                    setThumbsDownReason("");
+                                  }}
+                                  className="text-muted-foreground hover:text-red-500 transition-colors"
+                                >
+                                  <ThumbsDown className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
+                            {msg.feedbackGiven && (
+                              <p className="text-[10px] text-muted-foreground pl-1 mt-0.5">
+                                Thanks for your feedback!
+                              </p>
+                            )}
+                            {thumbsDownId === msg.id && !msg.feedbackGiven && (
+                              <div className="mt-1.5 pl-1 flex flex-col gap-1">
+                                <p className="text-[11px] text-muted-foreground">
+                                  Why didn&apos;t you like this reply?
+                                </p>
+                                <textarea
+                                  value={thumbsDownReason}
+                                  onChange={(e) =>
+                                    setThumbsDownReason(e.target.value)
+                                  }
+                                  placeholder="Tell us why..."
+                                  className="text-xs border border-border rounded-lg px-2 py-1.5 resize-none h-16 bg-background w-full focus:outline-none focus:ring-1 focus:ring-violet-400"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (!thumbsDownReason.trim()) return;
+                                    submitHelpyFeedback({
+                                      messageId: msg.id,
+                                      helpyReply: msg.text,
+                                      rating: "down",
+                                      reason: thumbsDownReason.trim(),
+                                      senderRole,
+                                      senderName,
+                                    });
+                                    setHelpyMessages((prev) =>
+                                      prev.map((m) =>
+                                        m.id === msg.id
+                                          ? { ...m, feedbackGiven: true }
+                                          : m,
+                                      ),
+                                    );
+                                    setThumbsDownId(null);
+                                    setThumbsDownReason("");
+                                  }}
+                                  disabled={!thumbsDownReason.trim()}
+                                  className="self-end text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg disabled:opacity-40 transition-colors"
+                                >
+                                  Submit
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
@@ -621,7 +730,7 @@ export function SupportPortal({
                   <div ref={helpyEndRef} />
                 </div>
               )}
-            </ScrollArea>
+            </div>
 
             {/* Helpy input — compact */}
             <div className="px-3 py-2 border-t border-border bg-background/50">

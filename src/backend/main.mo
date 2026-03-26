@@ -40,6 +40,7 @@ actor Main {
   var assignments : [(Text, Assignment)] = [];
   var grades : [(Text, Grade)] = [];
   var nextId : Nat = 1;
+  stable var verificationCodes : [(Text, Text)] = [];
 
   func genId() : Text {
     let id = nextId;
@@ -80,6 +81,31 @@ actor Main {
       if (sid == id) return ?s;
     };
     null;
+  };
+
+  public query func getStudentPublicByUsername(username : Text) : async ?(Text, Text) {
+    switch (findStudentByUsername(username)) {
+      case (null) null;
+      case (?s) ?(s.username, s.name);
+    };
+  };
+
+  public func setVerificationCode(username : Text, code : Text) : async () {
+    var updated : [(Text, Text)] = [];
+    for ((u, c) in verificationCodes.vals()) {
+      if (u != username) {
+        updated := updated.concat([(u, c)]);
+      };
+    };
+    updated := updated.concat([(username, code)]);
+    verificationCodes := updated;
+  };
+
+  public query func checkVerificationCode(username : Text, code : Text) : async Bool {
+    for ((u, c) in verificationCodes.vals()) {
+      if (u == username and c == code) return true;
+    };
+    false;
   };
 
   public func createSubject(name : Text, description : Text, teacherPrincipal : Text) : async Text {

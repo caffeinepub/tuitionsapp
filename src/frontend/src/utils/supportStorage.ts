@@ -361,3 +361,41 @@ export function clearStudentWarnings(username: string): void {
   const warnings = getStudentWarnings().filter((w) => w.username !== username);
   localStorage.setItem(STUDENT_WARNINGS_KEY, JSON.stringify(warnings));
 }
+
+// ─── Helpy Feedback ───────────────────────────────────────────────────────────
+
+const HELPY_FEEDBACK_KEY = "tuitions_helpy_feedback";
+
+export type HelpyFeedback = {
+  id: string;
+  messageId: string;
+  helpyReply: string;
+  rating: "up" | "down";
+  reason?: string; // only for "down"
+  senderRole: "teacher" | "parent";
+  senderName: string;
+  createdAt: string;
+};
+
+export function getHelpyFeedback(): HelpyFeedback[] {
+  try {
+    const raw = localStorage.getItem(HELPY_FEEDBACK_KEY);
+    return raw ? (JSON.parse(raw) as HelpyFeedback[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function submitHelpyFeedback(
+  feedback: Omit<HelpyFeedback, "id" | "createdAt">,
+): void {
+  const all = getHelpyFeedback();
+  // Only one feedback per messageId
+  if (all.some((f) => f.messageId === feedback.messageId)) return;
+  all.push({
+    ...feedback,
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    createdAt: new Date().toISOString(),
+  });
+  localStorage.setItem(HELPY_FEEDBACK_KEY, JSON.stringify(all));
+}
