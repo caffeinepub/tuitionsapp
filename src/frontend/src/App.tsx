@@ -12,7 +12,11 @@ import { StudentRegister } from "./components/StudentRegister";
 import { TeacherDashboard } from "./components/TeacherDashboard";
 import { TeacherLogin } from "./components/TeacherLogin";
 import { adminLogout } from "./utils/adminStorage";
-import { getParentLink, getStudentUsers } from "./utils/studentStorage";
+import {
+  getParentLink,
+  getParentLinkName,
+  getStudentUsers,
+} from "./utils/studentStorage";
 
 export type AppView =
   | "landing"
@@ -59,16 +63,17 @@ export default function App() {
     // Check if parent already has a linked student
     const existingLink = getParentLink(principal);
     if (existingLink) {
+      // Try to get the name: first from localStorage students, then from cached name
       const students = getStudentUsers();
       const student = students.find(
         (s) => s.username.toLowerCase() === existingLink.toLowerCase(),
       );
-      if (student) {
-        setLinkedStudentName(student.name);
-        setLinkedStudentUsername(student.username);
-        setView("parent-dashboard");
-        return;
-      }
+      const name =
+        student?.name || getParentLinkName(principal) || existingLink;
+      setLinkedStudentName(name);
+      setLinkedStudentUsername(existingLink);
+      setView("parent-dashboard");
+      return;
     }
     setView("parent-link-student");
   }, []);

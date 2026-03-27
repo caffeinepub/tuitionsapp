@@ -37,46 +37,51 @@ export function ParentLinkStudent({
     setIsLoading(true);
 
     try {
-      // First check localStorage
+      const lookupUsername = username.trim().toLowerCase();
+
+      // First check localStorage (same device)
       const students = getStudentUsers();
-      const student = students.find(
-        (s) => s.username.toLowerCase() === username.trim().toLowerCase(),
+      const localStudent = students.find(
+        (s) => s.username.toLowerCase() === lookupUsername,
       );
 
-      let studentName = student?.name ?? "";
-      let studentUsername = student?.username ?? username.trim().toLowerCase();
+      let studentName = localStudent?.name ?? "";
+      let studentUsername = localStudent?.username ?? lookupUsername;
+      let foundStudent = !!localStudent;
 
       // If not found locally, check the backend canister (cross-device support)
-      if (!student) {
+      if (!foundStudent) {
         try {
           const actor = (await createActorWithConfig()) as any;
-          const result = await actor.getStudentPublicByUsername(
-            username.trim().toLowerCase(),
-          );
-          // ?(Text, Text) in Motoko = [] | [[string, string]] in JS
-          if (result && (result as unknown[]).length > 0) {
-            const tuple = (result as unknown as [string, string][])[0];
+          const result = await actor.getStudentPublicByUsername(lookupUsername);
+          // Motoko ?(Text, Text) comes back as [] or [[username, name]]
+          const arr = result as unknown[];
+          if (arr && arr.length > 0) {
+            const tuple = arr[0] as [string, string];
             studentUsername = tuple[0];
             studentName = tuple[1];
-          } else {
-            toast.error("No student found with that username.");
-            setIsLoading(false);
-            return;
+            foundStudent = true;
           }
         } catch {
-          toast.error("No student found with that username.");
-          setIsLoading(false);
-          return;
+          // backend unreachable — fall through to error below
         }
       }
 
+      if (!foundStudent) {
+        toast.error(
+          "No student found with that username. Make sure the student has logged in at least once.",
+        );
+        setIsLoading(false);
+        return;
+      }
+
       // Verify code — check localStorage first, then backend
-      let valid = verifyStudentCode(username.trim(), code.trim());
+      let valid = verifyStudentCode(lookupUsername, code.trim());
       if (!valid) {
         try {
           const actor = (await createActorWithConfig()) as any;
           valid = await actor.checkVerificationCode(
-            username.trim().toLowerCase(),
+            lookupUsername,
             code.trim(),
           );
         } catch {
@@ -92,7 +97,7 @@ export function ParentLinkStudent({
         return;
       }
 
-      saveParentLink(parentPrincipal, studentUsername);
+      saveParentLink(parentPrincipal, studentUsername, studentName);
       toast.success(`Linked to ${studentName}'s account!`);
       onLinked(studentUsername, studentName);
     } catch {

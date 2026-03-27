@@ -35,7 +35,7 @@ actor Main {
     feedback : Text;
   };
 
-  var students : [(Text, StudentProfile)] = [];
+  stable var students : [(Text, StudentProfile)] = [];
   var subjects : [(Text, Subject)] = [];
   var assignments : [(Text, Assignment)] = [];
   var grades : [(Text, Grade)] = [];

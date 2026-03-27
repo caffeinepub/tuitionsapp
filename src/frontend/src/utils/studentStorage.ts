@@ -1,6 +1,7 @@
 const STORAGE_KEY = "tuitions_students";
 const VERIFICATION_CODES_KEY = "tuitions_verification_codes";
 const PARENT_LINKS_KEY = "tuitions_parent_links";
+const PARENT_LINK_NAMES_KEY = "tuitions_parent_link_names";
 
 export type StoredStudent = {
   name: string;
@@ -64,12 +65,36 @@ export function getParentLink(principal: string): string | null {
   }
 }
 
-export function saveParentLink(principal: string, username: string): void {
+export function getParentLinkName(principal: string): string | null {
+  try {
+    const raw = localStorage.getItem(PARENT_LINK_NAMES_KEY);
+    const names: Record<string, string> = raw ? JSON.parse(raw) : {};
+    return names[principal] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveParentLink(
+  principal: string,
+  username: string,
+  studentName?: string,
+): void {
   try {
     const raw = localStorage.getItem(PARENT_LINKS_KEY);
     const links: Record<string, string> = raw ? JSON.parse(raw) : {};
     links[principal] = username.toLowerCase();
     localStorage.setItem(PARENT_LINKS_KEY, JSON.stringify(links));
+
+    // Also cache the student's display name so we can restore it on re-login
+    if (studentName) {
+      const namesRaw = localStorage.getItem(PARENT_LINK_NAMES_KEY);
+      const names: Record<string, string> = namesRaw
+        ? JSON.parse(namesRaw)
+        : {};
+      names[principal] = studentName;
+      localStorage.setItem(PARENT_LINK_NAMES_KEY, JSON.stringify(names));
+    }
   } catch {
     // ignore
   }

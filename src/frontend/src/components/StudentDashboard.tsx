@@ -74,20 +74,29 @@ export function StudentDashboard({ student, onLogout }: Props) {
     [student.username],
   );
 
-  // Sync verification code to backend on mount for cross-device parent linking
+  // Sync student profile and verification code to backend on mount.
+  // This enables cross-device parent-student linking.
   useEffect(() => {
+    const username = student.username.toLowerCase();
+    const name = student.name;
+
     createActorWithConfig()
       .then((actor: any) => {
-        actor
-          .setVerificationCode(student.username.toLowerCase(), verificationCode)
-          .catch(() => {
-            /* ignore backend sync errors */
-          });
+        // Register student in backend (ignore error if already exists)
+        actor.registerStudent(username, name, "").catch(() => {
+          /* already registered, ignore */
+        });
+
+        // Sync verification code
+        actor.setVerificationCode(username, verificationCode).catch(() => {
+          /* ignore */
+        });
       })
       .catch(() => {
-        /* ignore */
+        /* ignore network errors */
       });
-  }, [student.username, verificationCode]);
+  }, [student.username, student.name, verificationCode]);
+
   const [reportOpen, setReportOpen] = useState(false);
   const [studentWarning, setStudentWarning] = useState<string | null>(null);
 
