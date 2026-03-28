@@ -72,7 +72,7 @@
     @apply text-foreground;
     font-family: "Nunito", sans-serif;
     font-weight: 400;
-    background: linear-gradient(135deg, #f5e4d3 0%, #dde9d5 100%);
+    animation: bg-shift 15s ease infinite;
     background-attachment: fixed;
     min-height: 100vh;
   }
@@ -96,15 +96,36 @@
   }
 }
 
+@keyframes bg-shift {
+  0% {
+    background-color: #ffa500;
+  }
+  25% {
+    background-color: #add8e6;
+  }
+  50% {
+    background-color: #ffc0cb;
+  }
+  75% {
+    background-color: #ffcccb;
+  }
+  87% {
+    background-color: #90ee90;
+  }
+  100% {
+    background-color: #ffa500;
+  }
+}
+
 /* Display / Logo — Fredoka One */
 .font-display {
   font-family: "Fredoka One", cursive;
   font-weight: 400;
 }
 
-/* Landing gradient — peach to sage */
+/* Landing gradient — shifting background */
 .landing-bg {
-  background: linear-gradient(135deg, #f5e4d3 0%, #dde9d5 100%);
+  animation: bg-shift 15s ease infinite;
 }
 
 /* Dashboard gradient header */

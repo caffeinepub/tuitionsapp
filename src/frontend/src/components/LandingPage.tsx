@@ -8,7 +8,7 @@ import {
   Star,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { AppView } from "../App";
 import { type Review, getReviews } from "../utils/reviewStorage";
 
@@ -74,33 +74,57 @@ function relativeDate(ts: number): string {
 
 export function LandingPage({ onNavigate }: Props) {
   const [reviews] = useState<Review[]>(() => getReviews());
+  const [logoClickCount, setLogoClickCount] = useState(0);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const logoClickTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleLogoClick() {
+    const nextCount = logoClickCount + 1;
+    if (nextCount >= 5) {
+      setShowAdmin(true);
+      setLogoClickCount(0);
+      if (logoClickTimeout.current) clearTimeout(logoClickTimeout.current);
+      return;
+    }
+    setLogoClickCount(nextCount);
+    if (logoClickTimeout.current) clearTimeout(logoClickTimeout.current);
+    logoClickTimeout.current = setTimeout(() => {
+      setLogoClickCount(0);
+    }, 2000);
+  }
 
   return (
     <div className="min-h-screen landing-bg flex flex-col">
       {/* Header */}
       <header className="px-6 py-5 flex items-center justify-between max-w-6xl mx-auto w-full">
-        <div className="flex items-center gap-2.5">
+        <button
+          type="button"
+          className="flex items-center gap-2.5 cursor-pointer select-none bg-transparent border-0 p-0 outline-none"
+          onClick={handleLogoClick}
+        >
           <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-sm">
             <Sparkles className="w-5 h-5 text-primary-foreground" />
           </div>
           <span className="font-display font-bold text-xl text-primary">
             TuitionsApp
           </span>
-        </div>
+        </button>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground font-sans hidden sm:block">
             Your all-in-one learning platform
           </span>
-          <Button
-            data-ocid="landing.admin.button"
-            variant="ghost"
-            size="sm"
-            onClick={() => onNavigate("admin-login")}
-            className="gap-1.5 text-muted-foreground hover:text-foreground text-xs"
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            Admin
-          </Button>
+          {showAdmin && (
+            <Button
+              data-ocid="landing.admin.button"
+              variant="ghost"
+              size="sm"
+              onClick={() => onNavigate("admin-login")}
+              className="gap-1.5 text-muted-foreground hover:text-foreground text-xs"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Admin
+            </Button>
+          )}
         </div>
       </header>
 
