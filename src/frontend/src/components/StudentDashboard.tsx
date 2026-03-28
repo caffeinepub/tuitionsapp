@@ -58,7 +58,6 @@ import { getWarningsForStudent } from "../utils/supportStorage";
 import { AiDoubtBot } from "./AiDoubtBot";
 import { ChatWindow } from "./ChatWindow";
 import { DashboardNav } from "./DashboardNav";
-import { FreeTimeRobot } from "./FreeTimeRobot";
 import { LearningGames } from "./LearningGames";
 import { QuizTaker } from "./QuizTaker";
 import { ReportUser } from "./ReportUser";
@@ -82,15 +81,13 @@ export function StudentDashboard({ student, onLogout }: Props) {
 
     createActorWithConfig()
       .then((actor: any) => {
-        // Register student in backend (ignore error if already exists)
-        actor.registerStudent(username, name, "").catch(() => {
-          /* already registered, ignore */
-        });
-
-        // Sync verification code
-        actor.setVerificationCode(username, verificationCode).catch(() => {
-          /* ignore */
-        });
+        // Single upsert call: syncs student name + verification code to backend.
+        // Works cross-device so parents can always find the student by username.
+        actor
+          .syncStudentForParentLink(username, name, verificationCode)
+          .catch(() => {
+            /* ignore network errors */
+          });
       })
       .catch(() => {
         /* ignore network errors */
@@ -994,7 +991,6 @@ export function StudentDashboard({ student, onLogout }: Props) {
       )}
 
       <AiDoubtBot />
-      <FreeTimeRobot mode="student" />
     </div>
   );
 }
