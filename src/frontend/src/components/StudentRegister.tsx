@@ -17,6 +17,7 @@ export function StudentRegister({ onRegistered, onBack }: Props) {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [dob, setDob] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,6 +44,7 @@ export function StudentRegister({ onRegistered, onBack }: Props) {
         name: name.trim(),
         username: username.trim().toLowerCase(),
         password,
+        dob: dob || undefined,
       });
       if (result.success) {
         // Sync to backend canister (fire and forget) for cross-device access
@@ -137,6 +139,26 @@ export function StudentRegister({ onRegistered, onBack }: Props) {
             autoComplete="new-password"
             className="h-10"
           />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="reg-dob" className="text-sm font-medium">
+            Date of Birth{" "}
+            <span className="text-muted-foreground font-normal">
+              (optional)
+            </span>
+          </Label>
+          <Input
+            id="reg-dob"
+            data-ocid="student.register.dob.input"
+            type="date"
+            value={dob}
+            onChange={(e) => setDob(e.target.value)}
+            className="h-10"
+          />
+          <p className="text-xs text-muted-foreground">
+            Students 16 and over can leave a review on the platform.
+          </p>
         </div>
 
         {error && (

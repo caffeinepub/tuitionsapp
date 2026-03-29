@@ -25,6 +25,7 @@ import {
   Megaphone,
   MessageSquare,
   School,
+  Star,
   Video,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -53,7 +54,11 @@ import {
   getAssignedQuizzesForStudent,
   getAttemptsUsed,
 } from "../utils/quizStorage";
-import { getOrCreateVerificationCode } from "../utils/studentStorage";
+import { addReview, getReviews } from "../utils/reviewStorage";
+import {
+  getOrCreateVerificationCode,
+  getStudentAge,
+} from "../utils/studentStorage";
 import { getWarningsForStudent } from "../utils/supportStorage";
 import { AiDoubtBot } from "./AiDoubtBot";
 import { ChatWindow } from "./ChatWindow";
@@ -95,6 +100,17 @@ export function StudentDashboard({ student, onLogout }: Props) {
   }, [student.username, student.name, verificationCode]);
 
   const [reportOpen, setReportOpen] = useState(false);
+
+  // Student review (16+)
+  const studentAge = getStudentAge(student.username);
+  const canReview = studentAge !== null && studentAge >= 16;
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState("");
+  const [reviewSubmitted, setReviewSubmitted] = useState(() =>
+    getReviews().some(
+      (r) => r.reviewerType === "student" && r.studentName === student.username,
+    ),
+  );
   const [studentWarning, setStudentWarning] = useState<string | null>(null);
 
   // All teacher-created assignments
@@ -873,6 +889,91 @@ export function StudentDashboard({ student, onLogout }: Props) {
           </h2>
           <LearningGames />
         </section>
+        {/* Student Review (16+) */}
+        {canReview && (
+          <section className="mb-8">
+            <h2 className="font-display text-xl font-bold text-foreground mb-2">
+              Leave a Review
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Share your experience to help other students find the right tutor.
+            </p>
+            {reviewSubmitted ? (
+              <div className="bg-student/10 border border-student/30 rounded-xl p-5 flex items-center gap-3">
+                <CheckCircle className="w-5 h-5 text-student flex-shrink-0" />
+                <p className="text-sm font-medium text-student">
+                  Thank you! Your review has been submitted and is visible on
+                  the home page.
+                </p>
+              </div>
+            ) : (
+              <div className="bg-card border border-border/60 rounded-xl p-5 space-y-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground mb-2">
+                    Your rating
+                  </p>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewRating(star)}
+                        className="p-0.5 transition-transform hover:scale-110"
+                      >
+                        <Star
+                          className="w-6 h-6"
+                          fill={
+                            star <= reviewRating ? "#f59e0b" : "transparent"
+                          }
+                          stroke={star <= reviewRating ? "#f59e0b" : "#d1d5db"}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label
+                    htmlFor="review-text"
+                    className="text-sm font-medium text-foreground block mb-1.5"
+                  >
+                    Your review
+                  </label>
+                  <textarea
+                    id="review-text"
+                    className="w-full min-h-[90px] rounded-lg border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-student/40"
+                    placeholder="Tell us about your learning experience on TuitionsApp..."
+                    value={reviewText}
+                    onChange={(e) => setReviewText(e.target.value)}
+                    maxLength={400}
+                  />
+                  <p className="text-xs text-muted-foreground text-right mt-0.5">
+                    {reviewText.length}/400
+                  </p>
+                </div>
+                <Button
+                  className="bg-student hover:bg-student/90 text-white font-semibold"
+                  disabled={reviewText.trim().length < 10}
+                  onClick={() => {
+                    if (reviewText.trim().length < 10) return;
+                    addReview({
+                      parentName: student.name,
+                      studentName: student.username,
+                      reviewText: reviewText.trim(),
+                      rating: reviewRating,
+                      reviewerType: "student",
+                    });
+                    setReviewSubmitted(true);
+                    toast.success(
+                      "Review submitted! It's now visible on the home page.",
+                    );
+                  }}
+                >
+                  Submit Review
+                </Button>
+              </div>
+            )}
+          </section>
+        )}
       </main>
 
       {activeChatBookingId &&

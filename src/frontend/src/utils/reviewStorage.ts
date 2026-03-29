@@ -5,6 +5,7 @@ export type Review = {
   reviewText: string;
   rating: number; // 1-5
   createdAt: number;
+  reviewerType?: "parent" | "student";
 };
 
 const KEY = "tuitions_reviews";

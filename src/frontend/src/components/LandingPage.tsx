@@ -2,10 +2,14 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
   BookOpen,
+  Brain,
+  CheckCircle,
   GraduationCap,
+  MessageSquare,
   ShieldCheck,
   Sparkles,
   Star,
+  Trophy,
   Users,
 } from "lucide-react";
 import { useRef, useState } from "react";
@@ -22,7 +26,18 @@ const roles = [
     icon: GraduationCap,
     label: "Student",
     description:
-      "Access your subjects, track assignments, and view your grades all in one place.",
+      "Everything you need to learn, grow, and succeed — all in one place.",
+    features: [
+      "Search and book sessions with teachers",
+      "View and complete assignments",
+      "Real-time chat with your teacher",
+      "Track your grades and progress",
+      "Take AI-powered quizzes and tests",
+      "Play educational Learning Games",
+      "Join classes via class code",
+      "Compete on the student Leaderboard",
+      "Ask your AI Doubt Bot anything",
+    ],
     cta: "Login as Student",
     ocid: "role.student.button",
     colorBar: "bg-student",
@@ -35,8 +50,19 @@ const roles = [
     key: "teacher" as const,
     icon: BookOpen,
     label: "Teacher",
-    description:
-      "Manage your classes, create assignments, and track student progress effortlessly.",
+    description: "Powerful tools to teach, manage, and inspire your students.",
+    features: [
+      "Create and assign work to students",
+      "AI-powered Quiz & Test Builder",
+      "Grade students and track results",
+      "Real-time chat with students",
+      "Schedule and manage sessions",
+      "Create classes with join codes",
+      "Post class announcements",
+      "Upload profile picture and awards",
+      "Free Time Robot AI assistant",
+      "Support portal and report tools",
+    ],
     cta: "Login as Teacher",
     ocid: "role.teacher.button",
     colorBar: "bg-teacher",
@@ -50,7 +76,16 @@ const roles = [
     icon: Users,
     label: "Parent",
     description:
-      "Stay informed about your child's academic progress, grades, and upcoming sessions.",
+      "Stay connected and confident about your child's education journey.",
+    features: [
+      "Link to your child's account securely",
+      "View real grades and progress",
+      "See all booked sessions",
+      "Real-time messaging with teachers",
+      "View teacher profiles and awards",
+      "Leave public reviews",
+      "Support portal and report tools",
+    ],
     cta: "Login as Parent",
     ocid: "role.parent.button",
     colorBar: "bg-parent",
@@ -93,6 +128,12 @@ export function LandingPage({ onNavigate }: Props) {
     }, 2000);
   }
 
+  const parentReviews = reviews.filter(
+    (r) => !r.reviewerType || r.reviewerType === "parent",
+  );
+  const studentReviews = reviews.filter((r) => r.reviewerType === "student");
+  const allCommunityReviews = [...studentReviews, ...parentReviews];
+
   return (
     <div className="min-h-screen landing-bg flex flex-col">
       {/* Header */}
@@ -129,7 +170,7 @@ export function LandingPage({ onNavigate }: Props) {
       </header>
 
       {/* Hero */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+      <main className="flex-1 flex flex-col items-center px-4 py-12">
         {/* Decorative circles */}
         <div className="relative w-full max-w-6xl mb-12">
           <div
@@ -163,7 +204,7 @@ export function LandingPage({ onNavigate }: Props) {
           </p>
         </div>
 
-        {/* Role Cards */}
+        {/* Role Cards with Features */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full max-w-5xl">
           {roles.map((role, i) => (
             <RoleCard
@@ -175,20 +216,94 @@ export function LandingPage({ onNavigate }: Props) {
           ))}
         </div>
 
-        {/* Parent Reviews */}
-        {reviews.length > 0 && (
+        {/* Speech / Mission Section */}
+        <section
+          data-ocid="landing.speech.section"
+          className="w-full max-w-4xl mt-20 mb-4"
+        >
+          <div className="bg-card border border-border/60 rounded-3xl shadow-card p-8 sm:p-12 text-center relative overflow-hidden">
+            {/* Decorative quote mark */}
+            <div
+              className="absolute top-6 left-8 text-8xl font-display font-bold opacity-5 select-none pointer-events-none leading-none"
+              style={{ color: "oklch(var(--primary))" }}
+            >
+              &ldquo;
+            </div>
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <Brain className="w-5 h-5 text-primary" />
+              <span className="text-sm font-semibold text-primary uppercase tracking-widest">
+                Our Mission
+              </span>
+            </div>
+            <blockquote className="space-y-5 relative z-10">
+              <p className="text-foreground text-lg sm:text-xl leading-relaxed font-medium">
+                Every student deserves a champion. But finding the right tutor
+                &mdash; at the right time, for the right price &mdash; has
+                always been harder than it should be.{" "}
+                <span
+                  className="font-bold italic"
+                  style={{ color: "oklch(var(--primary))" }}
+                >
+                  TuitionsApp was built to change that.
+                </span>
+              </p>
+              <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
+                When a student connects with the right teacher, something
+                remarkable happens. Confidence grows. Results follow. Our
+                platform makes that connection possible for every learner, at
+                every stage of life &mdash; from primary school to university.
+              </p>
+              <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
+                We are more than a marketplace. We are a community where
+                students thrive, teachers flourish, and parents feel confident.{" "}
+                <span
+                  className="font-semibold"
+                  style={{ color: "oklch(var(--primary))" }}
+                >
+                  TuitionsApp is here to make sure no one gets left behind in
+                  education.
+                </span>
+              </p>
+            </blockquote>
+            <div className="flex items-center justify-center gap-6 mt-8 pt-6 border-t border-border/40">
+              <div className="text-center">
+                <p className="font-display font-bold text-2xl text-primary">
+                  Students
+                </p>
+                <p className="text-xs text-muted-foreground">Empowered daily</p>
+              </div>
+              <div className="w-px h-10 bg-border" />
+              <div className="text-center">
+                <p className="font-display font-bold text-2xl text-teacher">
+                  Teachers
+                </p>
+                <p className="text-xs text-muted-foreground">Flourishing</p>
+              </div>
+              <div className="w-px h-10 bg-border" />
+              <div className="text-center">
+                <p className="font-display font-bold text-2xl text-parent">
+                  Parents
+                </p>
+                <p className="text-xs text-muted-foreground">Always informed</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Community Reviews (Students + Parents) */}
+        {allCommunityReviews.length > 0 && (
           <section
             data-ocid="landing.reviews.section"
-            className="w-full max-w-5xl mt-16"
+            className="w-full max-w-5xl mt-12"
           >
             <h2 className="font-display text-2xl font-bold text-foreground text-center mb-2">
-              What Parents Say
+              What Our Community Says
             </h2>
             <p className="text-muted-foreground text-sm text-center mb-8">
-              Real experiences from parents in our community
+              Real experiences from students and parents
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {reviews.map((review, i) => (
+              {allCommunityReviews.map((review, i) => (
                 <div
                   key={review.id}
                   data-ocid={`landing.reviews.item.${i + 1}`}
@@ -204,14 +319,31 @@ export function LandingPage({ onNavigate }: Props) {
                         stroke={star <= review.rating ? "#f59e0b" : "#d1d5db"}
                       />
                     ))}
+                    {review.reviewerType === "student" && (
+                      <span className="ml-2 text-xs bg-student/10 text-student font-semibold px-2 py-0.5 rounded-full">
+                        Student
+                      </span>
+                    )}
+                    {(!review.reviewerType ||
+                      review.reviewerType === "parent") && (
+                      <span className="ml-2 text-xs bg-parent/10 text-parent font-semibold px-2 py-0.5 rounded-full">
+                        Parent
+                      </span>
+                    )}
                   </div>
                   {/* Text */}
                   <p className="text-sm text-foreground leading-relaxed flex-1">
-                    "{review.reviewText}"
+                    &ldquo;{review.reviewText}&rdquo;
                   </p>
                   {/* Footer */}
                   <div className="flex items-center justify-between mt-1">
-                    <span className="text-xs font-semibold text-parent">
+                    <span
+                      className={`text-xs font-semibold ${
+                        review.reviewerType === "student"
+                          ? "text-student"
+                          : "text-parent"
+                      }`}
+                    >
                       {review.parentName}
                     </span>
                     <span className="text-xs text-muted-foreground">
@@ -227,7 +359,7 @@ export function LandingPage({ onNavigate }: Props) {
 
       {/* Footer */}
       <footer className="py-6 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()}. Built with love using{" "}
+        &copy; {new Date().getFullYear()}. Built with love using{" "}
         <a
           href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
           target="_blank"
@@ -268,10 +400,22 @@ function RoleCard({
         </div>
 
         {/* Content */}
-        <h2 className="text-xl font-bold text-foreground mb-2">{role.label}</h2>
-        <p className="text-muted-foreground text-sm leading-relaxed flex-1 mb-5">
+        <h2 className="text-xl font-bold text-foreground mb-1">{role.label}</h2>
+        <p className="text-muted-foreground text-sm leading-relaxed mb-4">
           {role.description}
         </p>
+
+        {/* Feature list */}
+        <ul className="space-y-1.5 mb-5 flex-1">
+          {role.features.map((feat) => (
+            <li key={feat} className="flex items-start gap-2 text-sm">
+              <CheckCircle
+                className={`w-4 h-4 mt-0.5 flex-shrink-0 ${role.iconColor}`}
+              />
+              <span className="text-foreground/80">{feat}</span>
+            </li>
+          ))}
+        </ul>
 
         {/* Button */}
         <Button

@@ -7,6 +7,7 @@ export type StoredStudent = {
   name: string;
   username: string;
   password: string;
+  dob?: string; // ISO date string e.g. "2005-03-15"
   isBanned?: boolean;
 };
 
@@ -20,6 +21,23 @@ export function getStudentUsers(): StoredStudent[] {
   } catch {
     return [];
   }
+}
+
+/** Returns age in years for a stored student, or null if no dob recorded. */
+export function getStudentAge(username: string): number | null {
+  const users = getStudentUsers();
+  const user = users.find(
+    (u) => u.username.toLowerCase() === username.toLowerCase(),
+  );
+  if (!user?.dob) return null;
+  const dob = new Date(user.dob);
+  const now = new Date();
+  let age = now.getFullYear() - dob.getFullYear();
+  const monthDiff = now.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) {
+    age--;
+  }
+  return age;
 }
 
 // ---- Verification codes ----
