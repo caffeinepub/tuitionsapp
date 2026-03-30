@@ -15,7 +15,7 @@ const roleBadgeClass = {
   Parent: "bg-white/20 text-white border-white/30",
 };
 
-/** Premium TuitionsApp logo mark — graduation cap with sparkle (white variant) */
+/** Premium Tuition Skill logo mark — graduation cap with sparkle (white variant) */
 function LogoMarkWhite() {
   return (
     <svg
@@ -73,7 +73,7 @@ export function DashboardNav({
             <LogoMarkWhite />
           </div>
           <span className="font-display font-bold text-lg text-white">
-            TuitionsApp
+            Tuition Skill
           </span>
           <Badge
             variant="outline"

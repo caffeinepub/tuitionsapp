@@ -39,7 +39,7 @@ export function AuthLayout({ children, onBack, roleLabel, roleColor }: Props) {
             <Sparkles className="w-5 h-5 text-primary-foreground" />
           </div>
           <span className="font-display font-bold text-xl text-primary">
-            TuitionsApp
+            Tuition Skill
           </span>
         </div>
         <Button

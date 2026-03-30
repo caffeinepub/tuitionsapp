@@ -32,7 +32,7 @@ export function ParentDobCheck({
     }
     if (age < 25) {
       setError(
-        "You must be 25 or older to register as a parent on TuitionsApp.",
+        "You must be 25 or older to register as a parent on Tuition Skill.",
       );
       return;
     }

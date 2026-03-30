@@ -583,7 +583,7 @@ export function ParentDashboard({
           <Card className="border-border/60 shadow-xs">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold text-foreground">
-                Share your experience with TuitionsApp
+                Share your experience with Tuition Skill
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -629,7 +629,7 @@ export function ParentDashboard({
                 </p>
                 <Textarea
                   data-ocid="review.textarea"
-                  placeholder="Tell us about your experience as a parent on TuitionsApp..."
+                  placeholder="Tell us about your experience as a parent on Tuition Skill..."
                   value={reviewText}
                   onChange={(e) => setReviewText(e.target.value)}
                   className="min-h-[100px] resize-none"

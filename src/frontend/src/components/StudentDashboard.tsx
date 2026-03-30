@@ -1023,7 +1023,7 @@ export function StudentDashboard({ student, onLogout }: Props) {
                   <textarea
                     id="review-text"
                     className="w-full min-h-[90px] rounded-lg border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-student/40"
-                    placeholder="Tell us about your learning experience on TuitionsApp..."
+                    placeholder="Tell us about your learning experience on Tuition Skill..."
                     value={reviewText}
                     onChange={(e) => setReviewText(e.target.value)}
                     maxLength={400}

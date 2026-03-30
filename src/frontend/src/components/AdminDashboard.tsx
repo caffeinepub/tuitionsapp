@@ -303,7 +303,7 @@ export function AdminDashboard({ onLogout }: Props) {
               Admin Panel
             </h1>
             <p className="text-xs text-muted-foreground">
-              TuitionsApp Control Centre
+              Tuition Skill Control Centre
             </p>
           </div>
         </div>

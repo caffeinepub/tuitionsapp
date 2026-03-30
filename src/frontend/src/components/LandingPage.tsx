@@ -108,7 +108,7 @@ function relativeDate(ts: number): string {
   return `${months} months ago`;
 }
 
-/** Premium TuitionsApp logo mark — graduation cap with sparkle */
+/** Premium Tuition Skill logo mark — graduation cap with sparkle */
 function LogoMark({
   size = 36,
   color = "#1B2B50",
@@ -203,7 +203,7 @@ export function LandingPage({ onNavigate }: Props) {
             className="font-display font-bold text-xl"
             style={{ color: "#1B2B50" }}
           >
-            TuitionsApp
+            Tuition Skill
           </span>
         </button>
         <div className="flex items-center gap-3">
@@ -272,85 +272,11 @@ export function LandingPage({ onNavigate }: Props) {
           ))}
         </div>
 
-        {/* Speech / Mission Section */}
-        <section
-          data-ocid="landing.speech.section"
-          className="w-full max-w-4xl mt-20 mb-4"
-        >
-          <div className="bg-card border border-border/60 rounded-3xl shadow-card p-8 sm:p-12 text-center relative overflow-hidden">
-            {/* Decorative quote mark */}
-            <div
-              className="absolute top-6 left-8 text-8xl font-display font-bold opacity-5 select-none pointer-events-none leading-none"
-              style={{ color: "oklch(var(--primary))" }}
-            >
-              &ldquo;
-            </div>
-            <div className="flex items-center justify-center gap-2 mb-6">
-              <Brain className="w-5 h-5 text-primary" />
-              <span className="text-sm font-semibold text-primary uppercase tracking-widest">
-                Our Mission
-              </span>
-            </div>
-            <blockquote className="space-y-5 relative z-10">
-              <p className="text-foreground text-lg sm:text-xl leading-relaxed font-medium">
-                Every student deserves a champion. But finding the right tutor
-                &mdash; at the right time, for the right price &mdash; has
-                always been harder than it should be.{" "}
-                <span
-                  className="font-bold italic"
-                  style={{ color: "oklch(var(--primary))" }}
-                >
-                  TuitionsApp was built to change that.
-                </span>
-              </p>
-              <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
-                When a student connects with the right teacher, something
-                remarkable happens. Confidence grows. Results follow. Our
-                platform makes that connection possible for every learner, at
-                every stage of life &mdash; from primary school to university.
-              </p>
-              <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
-                We are more than a marketplace. We are a community where
-                students thrive, teachers flourish, and parents feel confident.{" "}
-                <span
-                  className="font-semibold"
-                  style={{ color: "oklch(var(--primary))" }}
-                >
-                  TuitionsApp is here to make sure no one gets left behind in
-                  education.
-                </span>
-              </p>
-            </blockquote>
-            <div className="flex items-center justify-center gap-6 mt-8 pt-6 border-t border-border/40">
-              <div className="text-center">
-                <p className="font-display font-bold text-2xl text-primary">
-                  Students
-                </p>
-                <p className="text-xs text-muted-foreground">Empowered daily</p>
-              </div>
-              <div className="w-px h-10 bg-border" />
-              <div className="text-center">
-                <p className="font-display font-bold text-2xl text-teacher">
-                  Teachers
-                </p>
-                <p className="text-xs text-muted-foreground">Flourishing</p>
-              </div>
-              <div className="w-px h-10 bg-border" />
-              <div className="text-center">
-                <p className="font-display font-bold text-2xl text-parent">
-                  Parents
-                </p>
-                <p className="text-xs text-muted-foreground">Always informed</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* Community Reviews (Students + Parents) */}
         {allCommunityReviews.length > 0 && (
           <section
             data-ocid="landing.reviews.section"
-            className="w-full max-w-5xl mt-12"
+            className="w-full max-w-5xl mt-20"
           >
             <h2 className="font-display text-2xl font-bold text-foreground text-center mb-2">
               What Our Community Says
@@ -411,6 +337,79 @@ export function LandingPage({ onNavigate }: Props) {
             </div>
           </section>
         )}
+        {/* Speech / Mission Section */}
+        <section
+          data-ocid="landing.speech.section"
+          className="w-full max-w-4xl mt-12 mb-4"
+        >
+          <div className="bg-card border border-border/60 rounded-3xl shadow-card p-8 sm:p-12 text-center relative overflow-hidden">
+            {/* Decorative quote mark */}
+            <div
+              className="absolute top-6 left-8 text-8xl font-display font-bold opacity-5 select-none pointer-events-none leading-none"
+              style={{ color: "oklch(var(--primary))" }}
+            >
+              &ldquo;
+            </div>
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <Brain className="w-5 h-5 text-primary" />
+              <span className="text-sm font-semibold text-primary uppercase tracking-widest">
+                Our Mission
+              </span>
+            </div>
+            <blockquote className="space-y-5 relative z-10">
+              <p className="text-foreground text-lg sm:text-xl leading-relaxed font-medium">
+                Every student deserves a champion. But finding the right tutor
+                &mdash; at the right time, for the right price &mdash; has
+                always been harder than it should be.{" "}
+                <span
+                  className="font-bold italic"
+                  style={{ color: "oklch(var(--primary))" }}
+                >
+                  Tuition Skill was built to change that.
+                </span>
+              </p>
+              <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
+                When a student connects with the right teacher, something
+                remarkable happens. Confidence grows. Results follow. Our
+                platform makes that connection possible for every learner, at
+                every stage of life &mdash; from primary school to university.
+              </p>
+              <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
+                We are more than a marketplace. We are a community where
+                students thrive, teachers flourish, and parents feel confident.{" "}
+                <span
+                  className="font-semibold"
+                  style={{ color: "oklch(var(--primary))" }}
+                >
+                  Tuition Skill is here to make sure no one gets left behind in
+                  education.
+                </span>
+              </p>
+            </blockquote>
+            <div className="flex items-center justify-center gap-6 mt-8 pt-6 border-t border-border/40">
+              <div className="text-center">
+                <p className="font-display font-bold text-2xl text-primary">
+                  Students
+                </p>
+                <p className="text-xs text-muted-foreground">Empowered daily</p>
+              </div>
+              <div className="w-px h-10 bg-border" />
+              <div className="text-center">
+                <p className="font-display font-bold text-2xl text-teacher">
+                  Teachers
+                </p>
+                <p className="text-xs text-muted-foreground">Flourishing</p>
+              </div>
+              <div className="w-px h-10 bg-border" />
+              <div className="text-center">
+                <p className="font-display font-bold text-2xl text-parent">
+                  Parents
+                </p>
+                <p className="text-xs text-muted-foreground">Always informed</p>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
 
       {/* Footer */}
