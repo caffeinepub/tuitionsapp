@@ -399,3 +399,68 @@ export function submitHelpyFeedback(
   });
   localStorage.setItem(HELPY_FEEDBACK_KEY, JSON.stringify(all));
 }
+
+// ─── Teacher-Parent Direct Chat ───────────────────────────────────────────────
+
+const TP_CHAT_KEY = "tuitions_tp_chat";
+
+export type TpChatMessage = {
+  id: string;
+  channel: string; // format: "tp:teacherName:studentUsername"
+  senderRole: "teacher" | "parent";
+  senderName: string;
+  text: string;
+  sentAt: number; // timestamp ms
+};
+
+export function getTpMessages(channel: string): TpChatMessage[] {
+  try {
+    const raw = localStorage.getItem(TP_CHAT_KEY);
+    if (!raw) return [];
+    return (JSON.parse(raw) as TpChatMessage[]).filter(
+      (m) => m.channel === channel,
+    );
+  } catch {
+    return [];
+  }
+}
+
+export function sendTpMessage(
+  channel: string,
+  senderRole: "teacher" | "parent",
+  senderName: string,
+  text: string,
+): void {
+  try {
+    const raw = localStorage.getItem(TP_CHAT_KEY);
+    const msgs: TpChatMessage[] = raw ? JSON.parse(raw) : [];
+    msgs.push({
+      id: `tp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      channel,
+      senderRole,
+      senderName,
+      text,
+      sentAt: Date.now(),
+    });
+    localStorage.setItem(TP_CHAT_KEY, JSON.stringify(msgs));
+  } catch {}
+}
+
+export function getAllTpChats(): { channel: string; lastMsg: TpChatMessage }[] {
+  try {
+    const raw = localStorage.getItem(TP_CHAT_KEY);
+    if (!raw) return [];
+    const msgs = JSON.parse(raw) as TpChatMessage[];
+    const map = new Map<string, TpChatMessage>();
+    for (const m of msgs) {
+      const existing = map.get(m.channel);
+      if (!existing || m.sentAt > existing.sentAt) map.set(m.channel, m);
+    }
+    return Array.from(map.entries()).map(([channel, lastMsg]) => ({
+      channel,
+      lastMsg,
+    }));
+  } catch {
+    return [];
+  }
+}

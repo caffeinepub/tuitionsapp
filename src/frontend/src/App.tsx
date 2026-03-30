@@ -4,6 +4,7 @@ import { AdminDashboard } from "./components/AdminDashboard";
 import { AdminLogin } from "./components/AdminLogin";
 import { LandingPage } from "./components/LandingPage";
 import { ParentDashboard } from "./components/ParentDashboard";
+import { ParentDobCheck, getParentDob } from "./components/ParentDobCheck";
 import { ParentLinkStudent } from "./components/ParentLinkStudent";
 import { ParentLogin } from "./components/ParentLogin";
 import { StudentDashboard } from "./components/StudentDashboard";
@@ -29,7 +30,8 @@ export type AppView =
   | "teacher-dashboard"
   | "parent-dashboard"
   | "admin-login"
-  | "admin-dashboard";
+  | "admin-dashboard"
+  | "parent-dob-check";
 
 export type StudentUser = {
   name: string;
@@ -60,6 +62,12 @@ export default function App() {
 
   const onParentLoggedIn = useCallback((principal: string) => {
     setParentPrincipal(principal);
+    // Check DOB age gate for parents
+    const existingDob = getParentDob(principal);
+    if (!existingDob) {
+      setView("parent-dob-check");
+      return;
+    }
     // Check if parent already has a linked student
     const existingLink = getParentLink(principal);
     if (existingLink) {
@@ -77,6 +85,23 @@ export default function App() {
     }
     setView("parent-link-student");
   }, []);
+
+  const onParentDobConfirmed = useCallback(() => {
+    const existingLink = getParentLink(parentPrincipal);
+    if (existingLink) {
+      const students = getStudentUsers();
+      const student = students.find(
+        (s) => s.username.toLowerCase() === existingLink.toLowerCase(),
+      );
+      const name =
+        student?.name || getParentLinkName(parentPrincipal) || existingLink;
+      setLinkedStudentName(name);
+      setLinkedStudentUsername(existingLink);
+      setView("parent-dashboard");
+      return;
+    }
+    setView("parent-link-student");
+  }, [parentPrincipal]);
 
   const onStudentLinked = useCallback(
     (studentUsername: string, studentName: string) => {
@@ -115,6 +140,13 @@ export default function App() {
         <ParentLogin
           onBack={() => navigate("landing")}
           onLoggedIn={onParentLoggedIn}
+        />
+      )}
+      {view === "parent-dob-check" && (
+        <ParentDobCheck
+          parentPrincipal={parentPrincipal}
+          onConfirmed={onParentDobConfirmed}
+          onBack={() => navigate("landing")}
         />
       )}
       {view === "parent-link-student" && (

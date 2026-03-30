@@ -26,6 +26,7 @@ import {
   LogOut,
   MessageSquare,
   Phone,
+  RefreshCw,
   Send,
   ShieldCheck,
   Star,
@@ -50,6 +51,7 @@ import { type Review, deleteReview, getReviews } from "../utils/reviewStorage";
 import {
   type StoredStudent,
   banStudent,
+  flagStudentDob,
   getStudentUsers,
   unbanStudent,
 } from "../utils/studentStorage";
@@ -57,6 +59,7 @@ import {
   type HelpyFeedback,
   type SupportReport,
   type SupportTicket,
+  type TpChatMessage,
   banParent,
   banTeacher,
   clearTeacherWarnings,
@@ -65,10 +68,12 @@ import {
   deleteReport,
   deleteTeacher,
   getAllDirectChats,
+  getAllTpChats,
   getHelpyFeedback,
   getReports,
   getSupportChat,
   getTickets,
+  getTpMessages,
   getWarningsForTeacher,
   isParentBanned,
   isTeacherBanned,
@@ -137,6 +142,16 @@ export function AdminDashboard({ onLogout }: Props) {
     {},
   );
 
+  const [tpChats, setTpChats] = useState<
+    { channel: string; lastMsg: TpChatMessage }[]
+  >([]);
+  const [expandedTpChannel, setExpandedTpChannel] = useState<string | null>(
+    null,
+  );
+  const [tpThreadMsgs, setTpThreadMsgs] = useState<
+    Record<string, TpChatMessage[]>
+  >({});
+
   const refresh = useCallback(() => {
     setStudents(getStudentUsers());
     setAssignments(getAssignments());
@@ -148,6 +163,7 @@ export function AdminDashboard({ onLogout }: Props) {
     setReports(getReports());
     setHelpyFeedback(getHelpyFeedback());
     setDirectChats(getAllDirectChats());
+    setTpChats(getAllTpChats());
   }, []);
 
   useEffect(() => {
@@ -391,6 +407,14 @@ export function AdminDashboard({ onLogout }: Props) {
               )}
             </TabsTrigger>
             <TabsTrigger
+              data-ocid="admin.tp_chats.tab"
+              value="tp_chats"
+              className="gap-1.5"
+            >
+              <MessageSquare className="w-4 h-4" />
+              TP Chats
+            </TabsTrigger>
+            <TabsTrigger
               data-ocid="admin.helpy.tab"
               value="helpy"
               className="gap-1.5"
@@ -487,6 +511,7 @@ export function AdminDashboard({ onLogout }: Props) {
                       <TableHead>#</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Username</TableHead>
+                      <TableHead>DOB</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Action</TableHead>
                     </TableRow>
@@ -505,6 +530,16 @@ export function AdminDashboard({ onLogout }: Props) {
                           @{s.username}
                         </TableCell>
                         <TableCell>
+                          <span className="text-xs">
+                            {s.dob ? s.dob : "Not set"}
+                          </span>
+                          {s.dobFlagged && (
+                            <Badge className="ml-1 text-xs bg-amber-100 text-amber-700 border-amber-300">
+                              Re-check pending
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           {s.isBanned ? (
                             <Badge variant="destructive" className="text-xs">
                               Banned
@@ -518,10 +553,26 @@ export function AdminDashboard({ onLogout }: Props) {
                             </Badge>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="flex gap-1 flex-wrap items-center">
+                          <Button
+                            data-ocid={`admin.students.secondary_button.${i + 1}`}
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs gap-1"
+                            onClick={() => {
+                              flagStudentDob(s.username);
+                              setStudents(getStudentUsers());
+                              toast.success(
+                                `DOB re-check requested for @${s.username}`,
+                              );
+                            }}
+                          >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                            Re-check DOB
+                          </Button>
                           {s.isBanned ? (
                             <Button
-                              data-ocid={`admin.students.secondary_button.${i + 1}`}
+                              data-ocid={`admin.students.toggle.${i + 1}`}
                               size="sm"
                               variant="outline"
                               className="h-7 text-xs gap-1"
@@ -1801,6 +1852,117 @@ export function AdminDashboard({ onLogout }: Props) {
                             >
                               Send
                             </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+          <TabsContent value="tp_chats">
+            <div className="bg-card rounded-2xl border border-border/60 p-6">
+              <h3 className="font-display font-bold text-lg mb-1">
+                Teacher-Parent Chats
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Private messages between teachers and parents. Read-only view
+                for admin.
+              </p>
+              {tpChats.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <MessageSquare className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">No teacher-parent chats yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {tpChats.map(({ channel, lastMsg }, i) => {
+                    const parts = channel.replace("tp:", "").split(":");
+                    const teacherName = parts[0] ?? "Unknown Teacher";
+                    const parentId =
+                      parts.slice(1).join(":") ?? "Unknown Parent";
+                    const isExpanded = expandedTpChannel === channel;
+                    return (
+                      <div
+                        key={channel}
+                        data-ocid={`admin.tp_chats.item.${i + 1}`}
+                        className="border border-border/60 rounded-xl overflow-hidden"
+                      >
+                        <div className="flex items-center justify-between px-4 py-3 bg-background">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground">
+                              Teacher:{" "}
+                              <span className="text-teacher font-semibold">
+                                {teacherName}
+                              </span>{" "}
+                              ↔ Parent of student:{" "}
+                              <span className="text-parent font-semibold">
+                                {parentId}
+                              </span>
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">
+                              "{lastMsg.text}" — {lastMsg.senderName} ·{" "}
+                              {new Date(lastMsg.sentAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant={isExpanded ? "default" : "outline"}
+                            className="ml-3 flex-shrink-0 text-xs"
+                            onClick={() => {
+                              if (isExpanded) {
+                                setExpandedTpChannel(null);
+                              } else {
+                                setExpandedTpChannel(channel);
+                                setTpThreadMsgs((prev) => ({
+                                  ...prev,
+                                  [channel]: getTpMessages(channel),
+                                }));
+                              }
+                            }}
+                          >
+                            {isExpanded ? "Hide" : "View"}
+                          </Button>
+                        </div>
+                        {isExpanded && (
+                          <div className="border-t border-border/40 p-4 bg-muted/20 max-h-72 overflow-y-auto space-y-2">
+                            {(tpThreadMsgs[channel] ?? []).length === 0 ? (
+                              <p className="text-xs text-muted-foreground text-center py-4">
+                                No messages in this thread.
+                              </p>
+                            ) : (
+                              (tpThreadMsgs[channel] ?? []).map((msg) => (
+                                <div
+                                  key={msg.id}
+                                  className={`flex ${msg.senderRole === "teacher" ? "justify-end" : "justify-start"}`}
+                                >
+                                  <div
+                                    className={`max-w-[75%] px-3 py-1.5 rounded-xl text-xs ${msg.senderRole === "teacher" ? "bg-teacher/10 text-teacher border border-teacher/20 rounded-br-sm" : "bg-parent/10 text-parent border border-parent/20 rounded-bl-sm"}`}
+                                  >
+                                    <p className="font-semibold mb-0.5">
+                                      {msg.senderName}{" "}
+                                      <span className="font-normal opacity-60 capitalize">
+                                        ({msg.senderRole})
+                                      </span>
+                                    </p>
+                                    <p className="text-foreground">
+                                      {msg.text}
+                                    </p>
+                                    <p className="text-[10px] mt-0.5 opacity-60">
+                                      {new Date(msg.sentAt).toLocaleTimeString(
+                                        [],
+                                        { hour: "2-digit", minute: "2-digit" },
+                                      )}{" "}
+                                      ·{" "}
+                                      {new Date(
+                                        msg.sentAt,
+                                      ).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))
+                            )}
                           </div>
                         )}
                       </div>

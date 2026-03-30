@@ -1,32 +1,28 @@
 # TuitionsApp
 
 ## Current State
-Student registration (`StudentRegister.tsx`) and verification code generation (`StudentDashboard.tsx`) save data only to `localStorage`. Parent linking (`ParentLinkStudent.tsx`) reads only from `localStorage`. Since `localStorage` is browser/device-specific, a parent on a different device cannot find a student who registered on a different device.
-
-The backend (`main.mo`) already has `registerStudent` but it is never called by the frontend. There are no backend endpoints for verification codes or public student lookup.
+- Logo: Sparkles icon in a small rounded box + "TuitionsApp" text in LandingPage.tsx and DashboardNav.tsx.
+- Teacher-Parent: Parents see read-only student-teacher chat. No private teacher-parent channel exists.
+- Admin: Cannot see teacher-parent direct messages (they don't exist yet).
 
 ## Requested Changes (Diff)
 
 ### Add
-- Backend: `setVerificationCode(username, code)` public func
-- Backend: `checkVerificationCode(username, code)` public query
-- Backend: `getStudentPublicByUsername(username)` public query returning `?(Text, Text)` (username, name)
-- Backend: stable storage for verification codes
-- Frontend: after student registration saves to localStorage, also call `backend.registerStudent()` to persist in canister
-- Frontend: after verification code is created in localStorage, also call `backend.setVerificationCode()` to persist in canister
-- Frontend: parent linking falls back to backend query if student not found in localStorage
+- TpChatMessage type + storage in supportStorage.ts (key: tuitions_tp_chat). Channel key = tp:teacherName:parentPrincipal. Helpers: getTpMessages(channel), sendTpMessage(channel, senderRole, senderName, text), getAllTpChats().
+- Parent Messages section in TeacherDashboard.tsx: list parents from bookings, click to open direct chat.
+- Message Teacher button in ParentDashboard.tsx: opens direct chat inline per booking.
+- Parent-Teacher Chats tab in AdminDashboard.tsx: read-only view of all tp channels.
 
 ### Modify
-- `main.mo`: add verification codes stable var and three new public functions
-- `StudentRegister.tsx`: call backend `registerStudent` after local save
-- `StudentDashboard.tsx`: call backend `setVerificationCode` after local code creation
-- `ParentLinkStudent.tsx`: if student not in localStorage, query backend; verify code via backend
+- Logo in LandingPage.tsx and DashboardNav.tsx: replace Sparkles-in-box with a premium inline SVG mark (graduation cap with spark) + TuitionsApp wordmark.
 
 ### Remove
-- Nothing removed
+- Nothing.
 
 ## Implementation Plan
-1. Update `main.mo` with verification code storage and public lookup functions
-2. Update `StudentRegister.tsx` to also register in backend
-3. Update `StudentDashboard.tsx` to also sync verification code to backend
-4. Update `ParentLinkStudent.tsx` to query backend when local lookup fails and verify code via backend
+1. Add TpChatMessage type + helpers to supportStorage.ts.
+2. Redesign logo in LandingPage.tsx (navy version) and DashboardNav.tsx (white version).
+3. Add Parent Messages section in TeacherDashboard.tsx.
+4. Add Message Teacher button + inline chat in ParentDashboard.tsx.
+5. Add Parent-Teacher Chats tab in AdminDashboard.tsx.
+6. Validate build.

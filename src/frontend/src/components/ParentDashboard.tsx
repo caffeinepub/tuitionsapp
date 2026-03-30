@@ -19,6 +19,7 @@ import {
   GraduationCap,
   Headphones,
   MessageSquare,
+  Send,
   Star,
   User,
   Video,
@@ -34,7 +35,12 @@ import {
   markChatRead,
 } from "../utils/assignmentStorage";
 import { addReview } from "../utils/reviewStorage";
-import { isParentBanned } from "../utils/supportStorage";
+import {
+  type TpChatMessage,
+  getTpMessages,
+  isParentBanned,
+  sendTpMessage,
+} from "../utils/supportStorage";
 import {
   type TeacherProfile,
   getTeacherProfileByName,
@@ -104,6 +110,45 @@ export function ParentDashboard({
   const [viewingTeacherProfile, setViewingTeacherProfile] =
     useState<TeacherProfile | null>(null);
   const [viewingTeacherName, setViewingTeacherName] = useState<string>("");
+
+  // Teacher-Parent direct chat state
+  const [tpChatBookingId, setTpChatBookingId] = useState<string | null>(null);
+  const [tpMessages, setTpMessages] = useState<TpChatMessage[]>([]);
+  const [tpInput, setTpInput] = useState("");
+  const [tpPollRef] = useState<{
+    interval: ReturnType<typeof setInterval> | null;
+  }>({ interval: null });
+
+  function openTpChat(b: { id: string; teacherName: string }) {
+    const channel = `tp:${b.teacherName}:${linkedStudentUsername ?? ""}`;
+    setTpChatBookingId(b.id);
+    setTpMessages(getTpMessages(channel));
+    if (tpPollRef.interval) clearInterval(tpPollRef.interval);
+    tpPollRef.interval = setInterval(() => {
+      setTpMessages(getTpMessages(channel));
+    }, 1500);
+  }
+
+  function closeTpChat() {
+    setTpChatBookingId(null);
+    setTpMessages([]);
+    setTpInput("");
+    if (tpPollRef.interval) {
+      clearInterval(tpPollRef.interval);
+      tpPollRef.interval = null;
+    }
+  }
+
+  function sendTpMsg(teacherName: string) {
+    if (!tpInput.trim()) return;
+    const channel = `tp:${teacherName}:${linkedStudentUsername ?? ""}`;
+    const senderName = linkedStudentName
+      ? `Parent of ${linkedStudentName}`
+      : "Parent";
+    sendTpMessage(channel, "parent", senderName, tpInput.trim());
+    setTpInput("");
+    setTpMessages(getTpMessages(channel));
+  }
 
   const parentSenderName = linkedStudentName
     ? `Parent of ${linkedStudentName}`
@@ -330,62 +375,146 @@ export function ParentDashboard({
               className="bg-card rounded-xl border border-border/60 shadow-xs divide-y divide-border/60"
             >
               {bookings.map((b, i) => (
-                <div
-                  key={b.id}
-                  data-ocid={`dashboard.sessions.item.${i + 1}`}
-                  className="flex items-center justify-between px-4 py-3.5 gap-4"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-7 h-7 rounded-lg bg-parent-light flex items-center justify-center flex-shrink-0">
-                      <Video className="w-3.5 h-3.5 text-parent" />
+                <div key={b.id} data-ocid={`dashboard.sessions.item.${i + 1}`}>
+                  <div className="flex items-center justify-between px-4 py-3.5 gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-parent-light flex items-center justify-center flex-shrink-0">
+                        <Video className="w-3.5 h-3.5 text-parent" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {b.assignmentTitle}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {b.teacherName} &middot; {b.subject} &middot; {b.date}{" "}
+                          at {b.time}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {b.assignmentTitle}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {b.teacherName} &middot; {b.subject} &middot; {b.date}{" "}
-                        at {b.time}
-                      </p>
+                    <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+                      <Badge
+                        variant="outline"
+                        className={`text-xs ${
+                          b.status === "completed"
+                            ? "bg-green-50 text-green-700 border-green-200"
+                            : "bg-amber-50 text-amber-700 border-amber-200"
+                        }`}
+                      >
+                        {b.status === "completed" ? "Graded" : "Pending"}
+                      </Badge>
+                      <Button
+                        data-ocid="parent.teacher_profile.open_modal_button"
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5 text-xs border-parent/30 text-parent hover:bg-parent-light"
+                        onClick={() => openTeacherProfile(b.teacherName)}
+                      >
+                        <User className="w-3.5 h-3.5" />
+                        Teacher Profile
+                      </Button>
+                      <Button
+                        data-ocid={`dashboard.sessions.messages.button.${i + 1}`}
+                        size="sm"
+                        variant="outline"
+                        className="relative gap-1.5 text-xs"
+                        onClick={() => openChat(b)}
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        Messages
+                        {(unreadCounts[b.id] ?? 0) > 0 && (
+                          <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                            {unreadCounts[b.id]}
+                          </span>
+                        )}
+                      </Button>
+                      <Button
+                        data-ocid={`parent.tp_chat.button.${i + 1}`}
+                        size="sm"
+                        variant={
+                          tpChatBookingId === b.id ? "default" : "outline"
+                        }
+                        className={
+                          tpChatBookingId === b.id
+                            ? "gap-1.5 text-xs bg-teacher hover:bg-teacher/90 text-white"
+                            : "gap-1.5 text-xs border-teacher/30 text-teacher hover:bg-teacher-light"
+                        }
+                        onClick={() => {
+                          if (tpChatBookingId === b.id) {
+                            closeTpChat();
+                          } else {
+                            openTpChat(b);
+                          }
+                        }}
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        {tpChatBookingId === b.id ? "Close" : "Chat Teacher"}
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
-                    <Badge
-                      variant="outline"
-                      className={`text-xs ${
-                        b.status === "completed"
-                          ? "bg-green-50 text-green-700 border-green-200"
-                          : "bg-amber-50 text-amber-700 border-amber-200"
-                      }`}
-                    >
-                      {b.status === "completed" ? "Graded" : "Pending"}
-                    </Badge>
-                    <Button
-                      data-ocid="parent.teacher_profile.open_modal_button"
-                      size="sm"
-                      variant="outline"
-                      className="gap-1.5 text-xs border-parent/30 text-parent hover:bg-parent-light"
-                      onClick={() => openTeacherProfile(b.teacherName)}
-                    >
-                      <User className="w-3.5 h-3.5" />
-                      Teacher Profile
-                    </Button>
-                    <Button
-                      data-ocid={`dashboard.sessions.messages.button.${i + 1}`}
-                      size="sm"
-                      variant="outline"
-                      className="relative gap-1.5 text-xs"
-                      onClick={() => openChat(b)}
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      Messages
-                      {(unreadCounts[b.id] ?? 0) > 0 && (
-                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
-                          {unreadCounts[b.id]}
-                        </span>
-                      )}
-                    </Button>
-                  </div>
+                  {tpChatBookingId === b.id && (
+                    <div className="border-t border-border/40 p-4 bg-muted/30">
+                      <p className="text-xs font-semibold text-teacher mb-2">
+                        Private chat with {b.teacherName}
+                      </p>
+                      <div
+                        className="h-44 overflow-y-auto mb-3 space-y-2 bg-card rounded-lg p-3 border border-border/40"
+                        style={{ scrollbarWidth: "thin" }}
+                      >
+                        {tpMessages.length === 0 ? (
+                          <p className="text-xs text-muted-foreground text-center py-6">
+                            No messages yet. Start the conversation!
+                          </p>
+                        ) : (
+                          tpMessages.map((msg) => (
+                            <div
+                              key={msg.id}
+                              className={`flex ${msg.senderRole === "parent" ? "justify-end" : "justify-start"}`}
+                            >
+                              <div
+                                className={`max-w-[75%] px-3 py-1.5 rounded-xl text-xs ${msg.senderRole === "parent" ? "bg-parent text-white rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm"}`}
+                              >
+                                <p className="font-semibold mb-0.5 opacity-75">
+                                  {msg.senderName}
+                                </p>
+                                <p>{msg.text}</p>
+                                <p className="text-[10px] mt-0.5 opacity-60">
+                                  {new Date(msg.sentAt).toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </p>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          data-ocid="parent.tp_chat.input"
+                          type="text"
+                          value={tpInput}
+                          onChange={(e) => setTpInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              sendTpMsg(b.teacherName);
+                            }
+                          }}
+                          placeholder="Type a message to the teacher..."
+                          className="flex-1 h-8 text-xs px-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-parent/50"
+                        />
+                        <Button
+                          data-ocid="parent.tp_chat.submit_button"
+                          size="sm"
+                          className="h-8 bg-teacher hover:bg-teacher/90 text-white gap-1"
+                          onClick={() => sendTpMsg(b.teacherName)}
+                        >
+                          <Send className="w-3 h-3" />
+                          Send
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

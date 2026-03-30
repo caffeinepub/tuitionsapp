@@ -34,6 +34,7 @@ import {
   Plus,
   School,
   Search,
+  Send,
   Trash2,
   User,
   Users,
@@ -82,8 +83,11 @@ import {
 } from "../utils/quizStorage";
 import { getStudentUsers } from "../utils/studentStorage";
 import {
+  type TpChatMessage,
+  getTpMessages,
   getWarningsForTeacher,
   isTeacherBanned,
+  sendTpMessage,
 } from "../utils/supportStorage";
 import {
   type TeacherProfile,
@@ -197,6 +201,15 @@ export function TeacherDashboard({ onLogout }: Props) {
   const [announcementFormOpen, setAnnouncementFormOpen] = useState<
     Record<string, boolean>
   >({});
+  // Parent Messages (teacher-parent direct chat) state
+  const [parentMsgOpen, setParentMsgOpen] = useState(false);
+  const [activeTpChannel, setActiveTpChannel] = useState<string | null>(null);
+  const [tpMessages, setTpMessages] = useState<TpChatMessage[]>([]);
+  const [tpInput, setTpInput] = useState("");
+  const [tpPollRef] = useState<{
+    interval: ReturnType<typeof setInterval> | null;
+  }>({ interval: null });
+
   const [deleteClassConfirm, setDeleteClassConfirm] = useState<string | null>(
     null,
   );
@@ -404,6 +417,37 @@ export function TeacherDashboard({ onLogout }: Props) {
     clearSessionForm();
     setSessionOpen(false);
     toast.success("Session scheduled!");
+  }
+
+  // TP Chat helpers
+  function openTpChat(studentUsername: string) {
+    const name = teacherName || getTeacherName();
+    const channel = `tp:${name}:${studentUsername}`;
+    setActiveTpChannel(channel);
+    setTpMessages(getTpMessages(channel));
+    // Clear existing poll
+    if (tpPollRef.interval) clearInterval(tpPollRef.interval);
+    tpPollRef.interval = setInterval(() => {
+      setTpMessages(getTpMessages(channel));
+    }, 1500);
+  }
+
+  function closeTpChat() {
+    setActiveTpChannel(null);
+    setTpMessages([]);
+    setTpInput("");
+    if (tpPollRef.interval) {
+      clearInterval(tpPollRef.interval);
+      tpPollRef.interval = null;
+    }
+  }
+
+  function sendTpMsg() {
+    if (!activeTpChannel || !tpInput.trim()) return;
+    const name = teacherName || getTeacherName();
+    sendTpMessage(activeTpChannel, "teacher", name, tpInput.trim());
+    setTpInput("");
+    setTpMessages(getTpMessages(activeTpChannel));
   }
 
   function handleDeleteSession(id: string) {
@@ -1784,6 +1828,171 @@ export function TeacherDashboard({ onLogout }: Props) {
               ))}
             </div>
           )}
+        </section>
+
+        {/* Parent Messages (direct teacher-parent chat) */}
+        <section className="mb-8">
+          <button
+            type="button"
+            data-ocid="teacher.parent_messages.toggle"
+            onClick={() => {
+              setParentMsgOpen((o) => !o);
+              closeTpChat();
+            }}
+            className="flex items-center gap-2 w-full mb-4 group"
+          >
+            <MessageSquare className="w-5 h-5 text-teacher" />
+            <h2 className="font-display text-xl font-bold text-foreground">
+              Parent Messages
+            </h2>
+            {parentMsgOpen ? (
+              <ChevronUp className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
+            )}
+          </button>
+
+          {parentMsgOpen &&
+            (() => {
+              // Get unique students from bookings
+              const studentMap = new Map<string, string>();
+              for (const b of bookings) {
+                if (!studentMap.has(b.studentUsername)) {
+                  studentMap.set(b.studentUsername, b.studentName);
+                }
+              }
+              const students = Array.from(studentMap.entries());
+
+              return students.length === 0 ? (
+                <div
+                  data-ocid="teacher.parent_messages.empty_state"
+                  className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
+                >
+                  <MessageSquare className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+                  <p className="text-sm font-medium text-muted-foreground">
+                    No parent chats yet.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Chats appear once students have booked sessions and parents
+                    are linked.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {students.map(([studentUsername, studentName], i) => {
+                    const name = teacherName || getTeacherName();
+                    const channel = `tp:${name}:${studentUsername}`;
+                    const isActive = activeTpChannel === channel;
+                    return (
+                      <div
+                        key={studentUsername}
+                        data-ocid={`teacher.parent_messages.item.${i + 1}`}
+                        className="bg-card rounded-xl border border-border/60 shadow-xs overflow-hidden"
+                      >
+                        <div className="flex items-center justify-between px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-parent-light flex items-center justify-center">
+                              <Users className="w-4 h-4 text-parent" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-foreground">
+                                Parent of {studentName}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {studentUsername}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant={isActive ? "default" : "outline"}
+                            className={
+                              isActive
+                                ? "bg-teacher hover:bg-teacher/90 text-white gap-1.5"
+                                : "gap-1.5 text-xs border-teacher/30 text-teacher hover:bg-teacher-light"
+                            }
+                            onClick={() => {
+                              if (isActive) {
+                                closeTpChat();
+                              } else {
+                                openTpChat(studentUsername);
+                              }
+                            }}
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            {isActive ? "Close Chat" : "Chat"}
+                          </Button>
+                        </div>
+
+                        {isActive && (
+                          <div className="border-t border-border/40 p-4">
+                            <div
+                              className="h-48 overflow-y-auto mb-3 space-y-2 bg-background rounded-lg p-3 border border-border/40"
+                              style={{ scrollbarWidth: "thin" }}
+                            >
+                              {tpMessages.length === 0 ? (
+                                <p className="text-xs text-muted-foreground text-center py-6">
+                                  No messages yet. Start the conversation!
+                                </p>
+                              ) : (
+                                tpMessages.map((msg) => (
+                                  <div
+                                    key={msg.id}
+                                    className={`flex ${msg.senderRole === "teacher" ? "justify-end" : "justify-start"}`}
+                                  >
+                                    <div
+                                      className={`max-w-[75%] px-3 py-1.5 rounded-xl text-xs ${msg.senderRole === "teacher" ? "bg-teacher text-white rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm"}`}
+                                    >
+                                      <p className="font-semibold mb-0.5 opacity-75">
+                                        {msg.senderName}
+                                      </p>
+                                      <p>{msg.text}</p>
+                                      <p className="text-[10px] mt-0.5 opacity-60">
+                                        {new Date(
+                                          msg.sentAt,
+                                        ).toLocaleTimeString([], {
+                                          hour: "2-digit",
+                                          minute: "2-digit",
+                                        })}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              <input
+                                data-ocid="teacher.parent_messages.input"
+                                type="text"
+                                value={tpInput}
+                                onChange={(e) => setTpInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    sendTpMsg();
+                                  }
+                                }}
+                                placeholder="Type a message..."
+                                className="flex-1 h-8 text-xs px-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-teacher/50"
+                              />
+                              <Button
+                                data-ocid="teacher.parent_messages.button"
+                                size="sm"
+                                className="h-8 bg-teacher hover:bg-teacher/90 text-white gap-1"
+                                onClick={sendTpMsg}
+                              >
+                                <Send className="w-3 h-3" />
+                                Send
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
         </section>
       </main>
 

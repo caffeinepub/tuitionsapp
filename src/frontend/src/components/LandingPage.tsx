@@ -9,7 +9,6 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
-  Trophy,
   Users,
 } from "lucide-react";
 import { useRef, useState } from "react";
@@ -56,6 +55,7 @@ const roles = [
       "AI-powered Quiz & Test Builder",
       "Grade students and track results",
       "Real-time chat with students",
+      "Direct private chat with parents",
       "Schedule and manage sessions",
       "Create classes with join codes",
       "Post class announcements",
@@ -82,6 +82,7 @@ const roles = [
       "View real grades and progress",
       "See all booked sessions",
       "Real-time messaging with teachers",
+      "Direct private chat with teachers",
       "View teacher profiles and awards",
       "Leave public reviews",
       "Support portal and report tools",
@@ -105,6 +106,60 @@ function relativeDate(ts: number): string {
   const months = Math.floor(days / 30);
   if (months === 1) return "1 month ago";
   return `${months} months ago`;
+}
+
+/** Premium TuitionsApp logo mark — graduation cap with sparkle */
+function LogoMark({
+  size = 36,
+  color = "#1B2B50",
+}: { size?: number; color?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 36 36"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      {/* Mortarboard flat top */}
+      <polygon points="18,10 33,17 18,24 3,17" fill={color} opacity="0.95" />
+      {/* Cap body / base */}
+      <path
+        d="M11 19.5 L11 26 Q18 30 25 26 L25 19.5"
+        stroke={color}
+        strokeWidth="2.2"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      {/* Tassel stem */}
+      <line
+        x1="33"
+        y1="17"
+        x2="33"
+        y2="23"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      {/* Tassel bob */}
+      <circle cx="33" cy="24.5" r="1.8" fill={color} />
+      {/* 4-pointed sparkle above cap */}
+      <g transform="translate(18, 5.5)">
+        <path
+          d="M0,-4 C0,-1.5 0,-1.5 0,0 C0,-1.5 0,-1.5 0,-4 Z"
+          stroke={color}
+          strokeWidth="0"
+          fill={color}
+        />
+        {/* sparkle: 4 petals */}
+        <path d="M0 -4.2 Q0.7 -1.5 0 0 Q-0.7 -1.5 0 -4.2Z" fill={color} />
+        <path d="M0 4.2 Q0.7 1.5 0 0 Q-0.7 1.5 0 4.2Z" fill={color} />
+        <path d="M-4.2 0 Q-1.5 0.7 0 0 Q-1.5 -0.7 -4.2 0Z" fill={color} />
+        <path d="M4.2 0 Q1.5 0.7 0 0 Q1.5 -0.7 4.2 0Z" fill={color} />
+      </g>
+    </svg>
+  );
 }
 
 export function LandingPage({ onNavigate }: Props) {
@@ -143,10 +198,11 @@ export function LandingPage({ onNavigate }: Props) {
           className="flex items-center gap-2.5 cursor-pointer select-none bg-transparent border-0 p-0 outline-none"
           onClick={handleLogoClick}
         >
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-sm">
-            <Sparkles className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <span className="font-display font-bold text-xl text-primary">
+          <LogoMark size={36} color="#1B2B50" />
+          <span
+            className="font-display font-bold text-xl"
+            style={{ color: "#1B2B50" }}
+          >
             TuitionsApp
           </span>
         </button>

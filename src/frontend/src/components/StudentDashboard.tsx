@@ -58,6 +58,8 @@ import { addReview, getReviews } from "../utils/reviewStorage";
 import {
   getOrCreateVerificationCode,
   getStudentAge,
+  getStudentUsers,
+  updateStudentDob,
 } from "../utils/studentStorage";
 import { getWarningsForStudent } from "../utils/supportStorage";
 import { AiDoubtBot } from "./AiDoubtBot";
@@ -73,6 +75,16 @@ type Props = {
 };
 
 export function StudentDashboard({ student, onLogout }: Props) {
+  const [dobCheckDone, setDobCheckDone] = useState<boolean>(() => {
+    const users = getStudentUsers();
+    const u = users.find(
+      (u) => u.username.toLowerCase() === student.username.toLowerCase(),
+    );
+    return !(u?.dobFlagged === true);
+  });
+  const [dobInput, setDobInput] = useState("");
+  const [dobError, setDobError] = useState("");
+
   const verificationCode = useMemo(
     () => getOrCreateVerificationCode(student.username),
     [student.username],
@@ -271,6 +283,76 @@ export function StudentDashboard({ student, onLogout }: Props) {
     const id = setInterval(checkWarn, 5000);
     return () => clearInterval(id);
   }, [student.username]);
+
+  if (!dobCheckDone) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{
+          background:
+            "linear-gradient(135deg, #FFA500 0%, #ADD8E6 50%, #90EE90 100%)",
+        }}
+      >
+        <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+          <h2
+            className="text-2xl font-bold mb-2"
+            style={{ color: "#1B2B50", fontFamily: "Nunito, sans-serif" }}
+          >
+            Date of Birth Verification Required
+          </h2>
+          <p className="text-sm mb-6" style={{ color: "#8B929F" }}>
+            The admin has requested you verify your date of birth.
+          </p>
+          <div className="mb-4">
+            <label
+              htmlFor="dob-check-input"
+              className="block text-sm font-semibold mb-1"
+              style={{ color: "#1B2B50" }}
+            >
+              Date of Birth
+            </label>
+            <input
+              id="dob-check-input"
+              data-ocid="dob_check.input"
+              type="date"
+              value={dobInput}
+              onChange={(e) => {
+                setDobInput(e.target.value);
+                setDobError("");
+              }}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+              max={new Date().toISOString().split("T")[0]}
+            />
+            {dobError && (
+              <p
+                className="text-red-500 text-xs mt-1"
+                data-ocid="dob_check.error_state"
+              >
+                {dobError}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            data-ocid="dob_check.submit_button"
+            className="w-full py-2 rounded-lg font-bold text-white text-sm transition-opacity hover:opacity-90"
+            style={{ background: "#1B2B50" }}
+            onClick={() => {
+              if (!dobInput) {
+                setDobError("Please enter your date of birth.");
+                return;
+              }
+              updateStudentDob(student.username, dobInput);
+              setDobCheckDone(true);
+              toast.success("Date of birth updated.");
+            }}
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

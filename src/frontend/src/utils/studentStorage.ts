@@ -9,6 +9,7 @@ export type StoredStudent = {
   password: string;
   dob?: string; // ISO date string e.g. "2005-03-15"
   isBanned?: boolean;
+  dobFlagged?: boolean;
 };
 
 export function getStudentUsers(): StoredStudent[] {
@@ -187,4 +188,39 @@ export function isStudentBanned(username: string): boolean {
     (u) => u.username.toLowerCase() === username.toLowerCase(),
   );
   return user?.isBanned === true;
+}
+
+// ---- DOB Flag ----
+
+export function flagStudentDob(username: string): void {
+  const users = getStudentUsers();
+  const idx = users.findIndex(
+    (u) => u.username.toLowerCase() === username.toLowerCase(),
+  );
+  if (idx >= 0) {
+    users[idx] = { ...users[idx], dobFlagged: true };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+  }
+}
+
+export function clearStudentDobFlag(username: string): void {
+  const users = getStudentUsers();
+  const idx = users.findIndex(
+    (u) => u.username.toLowerCase() === username.toLowerCase(),
+  );
+  if (idx >= 0) {
+    users[idx] = { ...users[idx], dobFlagged: false };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+  }
+}
+
+export function updateStudentDob(username: string, dob: string): void {
+  const users = getStudentUsers();
+  const idx = users.findIndex(
+    (u) => u.username.toLowerCase() === username.toLowerCase(),
+  );
+  if (idx >= 0) {
+    users[idx] = { ...users[idx], dob, dobFlagged: false };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+  }
 }
