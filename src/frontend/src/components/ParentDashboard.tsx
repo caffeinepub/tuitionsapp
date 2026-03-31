@@ -19,6 +19,7 @@ import {
   GraduationCap,
   Headphones,
   MessageSquare,
+  PlusCircle,
   Send,
   Star,
   User,
@@ -35,6 +36,7 @@ import {
   markChatRead,
 } from "../utils/assignmentStorage";
 import { addReview } from "../utils/reviewStorage";
+import type { LinkedStudent } from "../utils/studentStorage";
 import {
   type TpChatMessage,
   getTpMessages,
@@ -54,12 +56,19 @@ type Props = {
   onLogout: () => void;
   linkedStudentName?: string;
   linkedStudentUsername?: string;
+  allLinkedStudents?: LinkedStudent[];
+  activeStudentUsername?: string;
+  onSwitchStudent?: (username: string) => void;
+  onAddStudent?: () => void;
 };
 
 export function ParentDashboard({
   onLogout,
   linkedStudentName,
   linkedStudentUsername,
+  allLinkedStudents = [],
+  onSwitchStudent,
+  onAddStudent,
 }: Props) {
   const childName = linkedStudentName || "your child";
   const parentPrincipal =
@@ -273,6 +282,34 @@ export function ParentDashboard({
           <p className="text-white/70 text-sm">
             Staying informed about {childName}'s academic progress.
           </p>
+          {/* Student switcher */}
+          {allLinkedStudents.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {allLinkedStudents.map((s) => (
+                <button
+                  key={s.username}
+                  type="button"
+                  onClick={() => onSwitchStudent?.(s.username)}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                    s.username.toLowerCase() ===
+                    linkedStudentUsername?.toLowerCase()
+                      ? "bg-white text-[#1B2B50]"
+                      : "bg-white/20 text-white hover:bg-white/30"
+                  }`}
+                >
+                  {s.name}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => onAddStudent?.()}
+                className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-white hover:bg-white/20 transition-colors border border-white/30"
+              >
+                <PlusCircle className="w-3 h-3" />
+                Add Student
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

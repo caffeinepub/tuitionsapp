@@ -250,13 +250,13 @@ export function LandingPage({ onNavigate }: Props) {
             Learning that
             <br />
             <span className="italic" style={{ color: "oklch(var(--student))" }}>
-              elevates
+              elevates and motivates
             </span>{" "}
             everyone
           </h1>
           <p className="text-muted-foreground text-lg max-w-xl mx-auto leading-relaxed">
             Connect students, teachers, and parents in a seamless educational
-            ecosystem designed for modern learning.
+            ecosystem designed for modern and advanced learning.
           </p>
         </div>
 

@@ -43,6 +43,11 @@ import {
   saveCallBooking,
 } from "../utils/assignmentStorage";
 import {
+  type ClassChatMessage,
+  getClassChatMessages,
+  sendClassChatMessage,
+} from "../utils/classChatStorage";
+import {
   type ClassAnnouncement,
   type TeacherClass,
   getClassesForStudent,
@@ -189,6 +194,15 @@ export function StudentDashboard({ student, onLogout }: Props) {
   );
   const [joinCodeInput, setJoinCodeInput] = useState("");
   const [classSectionOpen, setClassSectionOpen] = useState(true);
+  const [classChatOpen, setClassChatOpen] = useState<Record<string, boolean>>(
+    {},
+  );
+  const [classChatMessages, setClassChatMessages] = useState<
+    Record<string, ClassChatMessage[]>
+  >({});
+  const [classChatInput, setClassChatInput] = useState<Record<string, string>>(
+    {},
+  );
 
   // Auto-refresh classes every 5 seconds
   useEffect(() => {
@@ -283,6 +297,40 @@ export function StudentDashboard({ student, onLogout }: Props) {
     const id = setInterval(checkWarn, 5000);
     return () => clearInterval(id);
   }, [student.username]);
+
+  // Class chat helpers
+  function openClassChat(classId: string) {
+    setClassChatOpen((prev) => ({ ...prev, [classId]: true }));
+    setClassChatMessages((prev) => ({
+      ...prev,
+      [classId]: getClassChatMessages(classId),
+    }));
+    const interval = setInterval(() => {
+      setClassChatMessages((prev) => ({
+        ...prev,
+        [classId]: getClassChatMessages(classId),
+      }));
+    }, 2000);
+    (window as any)[`_sClassChatPoll_${classId}`] = interval;
+  }
+
+  function closeClassChat(classId: string) {
+    setClassChatOpen((prev) => ({ ...prev, [classId]: false }));
+    if ((window as any)[`_sClassChatPoll_${classId}`]) {
+      clearInterval((window as any)[`_sClassChatPoll_${classId}`]);
+    }
+  }
+
+  function sendClassChat(classId: string) {
+    const text = (classChatInput[classId] ?? "").trim();
+    if (!text) return;
+    sendClassChatMessage(classId, student.username, "student", text);
+    setClassChatInput((prev) => ({ ...prev, [classId]: "" }));
+    setClassChatMessages((prev) => ({
+      ...prev,
+      [classId]: getClassChatMessages(classId),
+    }));
+  }
 
   if (!dobCheckDone) {
     return (
@@ -725,6 +773,85 @@ export function StudentDashboard({ student, onLogout }: Props) {
                           </div>
                         </div>
                       )}
+                      {/* Class Chat */}
+                      <div className="mt-3 border-t border-border/40 pt-2">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <p className="text-xs font-semibold text-foreground flex items-center gap-1">
+                            💬 Class Chat
+                          </p>
+                          <button
+                            type="button"
+                            className="text-xs text-primary hover:underline"
+                            onClick={() =>
+                              classChatOpen[cls.id]
+                                ? closeClassChat(cls.id)
+                                : openClassChat(cls.id)
+                            }
+                          >
+                            {classChatOpen[cls.id] ? "Close" : "Open"}
+                          </button>
+                        </div>
+                        {classChatOpen[cls.id] && (
+                          <div className="flex flex-col gap-2">
+                            <div
+                              className="bg-muted/30 rounded-lg p-2 h-36 overflow-y-auto flex flex-col gap-1 text-xs"
+                              style={{ scrollbarWidth: "thin" }}
+                            >
+                              {(classChatMessages[cls.id] ?? []).length ===
+                              0 ? (
+                                <p className="text-muted-foreground text-center mt-4">
+                                  No messages yet.
+                                </p>
+                              ) : (
+                                (classChatMessages[cls.id] ?? []).map((msg) => (
+                                  <div
+                                    key={msg.id}
+                                    className={`flex gap-1.5 ${msg.senderUsername.toLowerCase() === student.username.toLowerCase() ? "flex-row-reverse" : ""}`}
+                                  >
+                                    <div
+                                      className={`max-w-[75%] px-2 py-1 rounded-lg ${msg.senderUsername.toLowerCase() === student.username.toLowerCase() ? "bg-student text-white" : msg.senderRole === "teacher" ? "bg-teacher text-white" : "bg-white border border-border"}`}
+                                    >
+                                      <p className="text-[10px] font-semibold mb-0.5 opacity-80">
+                                        {msg.senderRole === "teacher"
+                                          ? `${msg.senderUsername} (Teacher)`
+                                          : msg.senderUsername ===
+                                              student.username
+                                            ? "You"
+                                            : msg.senderUsername}
+                                      </p>
+                                      <p>{msg.text}</p>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                className="flex-1 text-xs border border-border rounded-lg px-2 py-1.5 bg-background focus:outline-none focus:ring-1 focus:ring-student/50"
+                                placeholder="Type a message..."
+                                value={classChatInput[cls.id] ?? ""}
+                                onChange={(e) =>
+                                  setClassChatInput((prev) => ({
+                                    ...prev,
+                                    [cls.id]: e.target.value,
+                                  }))
+                                }
+                                onKeyDown={(e) =>
+                                  e.key === "Enter" && sendClassChat(cls.id)
+                                }
+                              />
+                              <button
+                                type="button"
+                                className="px-3 py-1.5 bg-student text-white rounded-lg text-xs font-semibold hover:bg-student/90"
+                                onClick={() => sendClassChat(cls.id)}
+                              >
+                                Send
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

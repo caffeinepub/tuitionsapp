@@ -20,6 +20,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  ClipboardList,
   Flag,
   GraduationCap,
   Headphones,
@@ -36,6 +37,7 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
+import React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -47,7 +49,16 @@ import {
   getCallBookings,
   getGrades,
 } from "../utils/assignmentStorage";
+import {
+  type ParentProfile,
+  deleteParentProfile,
+  getAllRegisteredParents,
+} from "../utils/parentProfileStorage";
 import { type Review, deleteReview, getReviews } from "../utils/reviewStorage";
+import {
+  type RollCall,
+  getAllRollCallsForAdmin,
+} from "../utils/rollCallStorage";
 import {
   type StoredStudent,
   banStudent,
@@ -413,6 +424,14 @@ export function AdminDashboard({ onLogout }: Props) {
             >
               <MessageSquare className="w-4 h-4" />
               TP Chats
+            </TabsTrigger>
+            <TabsTrigger
+              data-ocid="admin.roll_calls.tab"
+              value="roll_calls"
+              className="gap-1.5"
+            >
+              <ClipboardList className="w-4 h-4" />
+              Roll Calls
             </TabsTrigger>
             <TabsTrigger
               data-ocid="admin.helpy.tab"
@@ -1154,98 +1173,10 @@ export function AdminDashboard({ onLogout }: Props) {
                   Parent Management
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Manage parents who have used the support chat
+                  All registered parents on Tuition Skill
                 </p>
               </div>
-              {directChats.length === 0 ? (
-                <div
-                  data-ocid="admin.parents.empty_state"
-                  className="flex flex-col items-center justify-center py-16 text-muted-foreground"
-                >
-                  <Users className="w-10 h-10 mb-3 opacity-30" />
-                  <p className="text-sm">No parents found yet</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-border">
-                  {directChats.map((chat, i) => {
-                    const banned = isParentBanned(chat.principal);
-                    return (
-                      <div
-                        key={chat.principal}
-                        data-ocid={`admin.parents.row.${i + 1}`}
-                        className="px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3"
-                      >
-                        <div className="flex-1">
-                          <p className="font-semibold text-foreground">
-                            {chat.senderName}
-                          </p>
-                          <p className="text-xs text-muted-foreground font-mono">
-                            {chat.principal.slice(0, 24)}…
-                          </p>
-                          <div className="mt-1">
-                            {banned ? (
-                              <Badge variant="destructive" className="text-xs">
-                                Banned
-                              </Badge>
-                            ) : (
-                              <Badge
-                                variant="outline"
-                                className="text-xs text-green-600 border-green-300"
-                              >
-                                Active
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          {banned ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-xs gap-1 border-green-300 text-green-700 hover:bg-green-50"
-                              onClick={() => {
-                                unbanParent(chat.principal);
-                                refresh();
-                                toast.success("Unbanned");
-                              }}
-                            >
-                              <CheckCircle2 className="w-3 h-3" />
-                              Unban
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-xs gap-1 border-destructive text-destructive hover:bg-destructive/10"
-                              onClick={() => {
-                                banParent(chat.principal);
-                                refresh();
-                                toast.success("Banned");
-                              }}
-                            >
-                              <Ban className="w-3 h-3" />
-                              Ban
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="h-7 text-xs gap-1"
-                            onClick={() => {
-                              deleteParent(chat.principal);
-                              refresh();
-                              toast.success("Deleted");
-                            }}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                            Delete
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              <ParentsRegistryList refresh={refresh} />
             </div>
           </TabsContent>
 
@@ -2034,8 +1965,200 @@ export function AdminDashboard({ onLogout }: Props) {
               )}
             </div>
           </TabsContent>
+          {/* Roll Calls Tab */}
+          <TabsContent value="roll_calls">
+            <RollCallsTab />
+          </TabsContent>
         </Tabs>
       </main>
+    </div>
+  );
+}
+
+function ParentsRegistryList({ refresh }: { refresh: () => void }) {
+  const [parents, setParents] = React.useState<ParentProfile[]>(() =>
+    getAllRegisteredParents(),
+  );
+  React.useEffect(() => {
+    const id = setInterval(() => setParents(getAllRegisteredParents()), 3000);
+    return () => clearInterval(id);
+  }, []);
+  if (parents.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+        <Users className="w-10 h-10 mb-3 opacity-30" />
+        <p className="text-sm">No parents registered yet</p>
+      </div>
+    );
+  }
+  return (
+    <div className="divide-y divide-border">
+      {parents.map((parent, i) => {
+        const banned = isParentBanned(parent.principal);
+        return (
+          <div
+            key={parent.principal}
+            data-ocid={`admin.parents.row.${i + 1}`}
+            className="px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3"
+          >
+            <div className="flex-1">
+              <p className="font-semibold text-foreground">{parent.name}</p>
+              <p className="text-xs text-muted-foreground font-mono">
+                {parent.principal.slice(0, 28)}…
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Joined: {new Date(parent.joinedAt).toLocaleDateString()}
+                {parent.linkedStudents.length > 0 && (
+                  <> · Linked students: {parent.linkedStudents.join(", ")}</>
+                )}
+              </p>
+              <div className="mt-1">
+                {banned ? (
+                  <Badge variant="destructive" className="text-xs">
+                    Banned
+                  </Badge>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    className="text-xs text-green-600 border-green-300"
+                  >
+                    Active
+                  </Badge>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {banned ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs gap-1 border-green-300 text-green-700 hover:bg-green-50"
+                  onClick={() => {
+                    unbanParent(parent.principal);
+                    refresh();
+                    toast.success("Unbanned");
+                  }}
+                >
+                  <CheckCircle2 className="w-3 h-3" />
+                  Unban
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs gap-1 border-destructive text-destructive hover:bg-destructive/10"
+                  onClick={() => {
+                    banParent(parent.principal);
+                    refresh();
+                    toast.success("Banned");
+                  }}
+                >
+                  <Ban className="w-3 h-3" />
+                  Ban
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-7 text-xs gap-1"
+                onClick={() => {
+                  deleteParent(parent.principal);
+                  deleteParentProfile(parent.principal);
+                  refresh();
+                  toast.success("Deleted");
+                }}
+              >
+                <Trash2 className="w-3 h-3" />
+                Delete
+              </Button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function RollCallsTab() {
+  const [rolls, setRolls] = React.useState<RollCall[]>(() =>
+    getAllRollCallsForAdmin(),
+  );
+  const [expanded, setExpanded] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    const id = setInterval(() => setRolls(getAllRollCallsForAdmin()), 5000);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <div className="bg-card border border-border/60 rounded-xl overflow-hidden">
+      <div className="px-6 py-4 border-b border-border">
+        <h2 className="font-display text-lg font-bold">Roll Calls</h2>
+        <p className="text-sm text-muted-foreground">
+          Attendance submitted by teachers
+        </p>
+      </div>
+      {rolls.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+          <ClipboardList className="w-10 h-10 mb-3 opacity-30" />
+          <p className="text-sm">No roll calls submitted yet</p>
+        </div>
+      ) : (
+        <div className="divide-y divide-border">
+          {rolls.map((roll) => {
+            const presentCount = roll.entries.filter((e) => e.present).length;
+            const absentCount = roll.entries.filter((e) => !e.present).length;
+            const isExpanded = expanded === roll.id;
+            return (
+              <div key={roll.id} className="px-6 py-4">
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-between text-left"
+                  onClick={() => setExpanded(isExpanded ? null : roll.id)}
+                >
+                  <div>
+                    <p className="font-semibold text-foreground">
+                      {roll.className}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Teacher: {roll.teacherName} · Date: {roll.date} ·{" "}
+                      {new Date(roll.submittedAt).toLocaleTimeString()}
+                    </p>
+                    <div className="flex gap-2 mt-1">
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">
+                        ✓ {presentCount} present
+                      </span>
+                      <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">
+                        ✗ {absentCount} absent
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {isExpanded && (
+                  <div className="mt-3 space-y-1.5">
+                    {roll.entries.map((e) => (
+                      <div
+                        key={e.username}
+                        className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2"
+                      >
+                        <span className="text-sm font-medium">
+                          @{e.username}
+                        </span>
+                        <span
+                          className={`text-xs font-semibold px-2 py-0.5 rounded-full ${e.present ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+                        >
+                          {e.present ? "Present" : "Absent"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

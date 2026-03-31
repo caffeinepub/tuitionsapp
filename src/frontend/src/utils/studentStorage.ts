@@ -224,3 +224,68 @@ export function updateStudentDob(username: string, dob: string): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
   }
 }
+
+// ---- Multi-student parent links ----
+const PARENT_MULTI_LINKS_KEY = "tuitions_parent_multi_links";
+// Structure: Record<principal, Array<{username, name}>>
+
+export type LinkedStudent = { username: string; name: string };
+
+export function getParentLinks(principal: string): LinkedStudent[] {
+  try {
+    const raw = localStorage.getItem(PARENT_MULTI_LINKS_KEY);
+    const all: Record<string, LinkedStudent[]> = raw ? JSON.parse(raw) : {};
+    const multi = all[principal] ?? [];
+    // Merge with legacy single link if not already present
+    const legacy = getParentLink(principal);
+    if (
+      legacy &&
+      !multi.some((l) => l.username.toLowerCase() === legacy.toLowerCase())
+    ) {
+      const legacyName = getParentLinkName(principal) ?? legacy;
+      multi.unshift({ username: legacy, name: legacyName });
+      // Save merged back
+      all[principal] = multi;
+      localStorage.setItem(PARENT_MULTI_LINKS_KEY, JSON.stringify(all));
+    }
+    return multi;
+  } catch {
+    return [];
+  }
+}
+
+export function addParentLink(
+  principal: string,
+  username: string,
+  name: string,
+): void {
+  try {
+    const raw = localStorage.getItem(PARENT_MULTI_LINKS_KEY);
+    const all: Record<string, LinkedStudent[]> = raw ? JSON.parse(raw) : {};
+    const list = all[principal] ?? [];
+    const lower = username.toLowerCase();
+    if (!list.some((l) => l.username.toLowerCase() === lower)) {
+      list.push({ username: lower, name });
+      all[principal] = list;
+      localStorage.setItem(PARENT_MULTI_LINKS_KEY, JSON.stringify(all));
+    }
+    // Also keep legacy single link for backward compat
+    saveParentLink(principal, username, name);
+  } catch {
+    // ignore
+  }
+}
+
+export function removeParentLink(principal: string, username: string): void {
+  try {
+    const raw = localStorage.getItem(PARENT_MULTI_LINKS_KEY);
+    const all: Record<string, LinkedStudent[]> = raw ? JSON.parse(raw) : {};
+    const lower = username.toLowerCase();
+    all[principal] = (all[principal] ?? []).filter(
+      (l) => l.username.toLowerCase() !== lower,
+    );
+    localStorage.setItem(PARENT_MULTI_LINKS_KEY, JSON.stringify(all));
+  } catch {
+    // ignore
+  }
+}

@@ -60,6 +60,11 @@ import {
   saveScheduledSession,
 } from "../utils/assignmentStorage";
 import {
+  type ClassChatMessage,
+  getClassChatMessages,
+  sendClassChatMessage,
+} from "../utils/classChatStorage";
+import {
   type ClassAnnouncement,
   type TeacherClass,
   addStudentToClass,
@@ -81,6 +86,7 @@ import {
   saveQuiz,
   updateQuiz,
 } from "../utils/quizStorage";
+import { submitRollCall as submitRollCallStorage } from "../utils/rollCallStorage";
 import { getStudentUsers } from "../utils/studentStorage";
 import {
   type TpChatMessage,
@@ -210,6 +216,21 @@ export function TeacherDashboard({ onLogout }: Props) {
     interval: ReturnType<typeof setInterval> | null;
   }>({ interval: null });
 
+  // Class chat state
+  const [classChatOpen, setClassChatOpen] = useState<Record<string, boolean>>(
+    {},
+  );
+  const [classChatMessages, setClassChatMessages] = useState<
+    Record<string, ClassChatMessage[]>
+  >({});
+  const [classChatInput, setClassChatInput] = useState<Record<string, string>>(
+    {},
+  );
+  // Roll call state
+  const [rollCallOpen, setRollCallOpen] = useState<Record<string, boolean>>({});
+  const [rollEntries, setRollEntries] = useState<
+    Record<string, Record<string, boolean>>
+  >({});
   const [deleteClassConfirm, setDeleteClassConfirm] = useState<string | null>(
     null,
   );
@@ -571,6 +592,76 @@ export function TeacherDashboard({ onLogout }: Props) {
   function handleDeleteAnnouncement(classId: string, announcementId: string) {
     deleteAnnouncement(classId, announcementId);
     setClasses(getClassesForTeacher(getTeacherName()));
+  }
+
+  // Class chat helpers
+  function openClassChat(classId: string) {
+    setClassChatOpen((prev) => ({ ...prev, [classId]: true }));
+    setClassChatMessages((prev) => ({
+      ...prev,
+      [classId]: getClassChatMessages(classId),
+    }));
+    // Poll
+    const interval = setInterval(() => {
+      setClassChatMessages((prev) => ({
+        ...prev,
+        [classId]: getClassChatMessages(classId),
+      }));
+    }, 2000);
+    (window as any)[`_classChatPoll_${classId}`] = interval;
+  }
+
+  function closeClassChat(classId: string) {
+    setClassChatOpen((prev) => ({ ...prev, [classId]: false }));
+    if ((window as any)[`_classChatPoll_${classId}`]) {
+      clearInterval((window as any)[`_classChatPoll_${classId}`]);
+    }
+  }
+
+  function sendClassChat(classId: string) {
+    const text = (classChatInput[classId] ?? "").trim();
+    if (!text) return;
+    const tName = teacherName || getTeacherName();
+    sendClassChatMessage(classId, tName, "teacher", text);
+    setClassChatInput((prev) => ({ ...prev, [classId]: "" }));
+    setClassChatMessages((prev) => ({
+      ...prev,
+      [classId]: getClassChatMessages(classId),
+    }));
+  }
+
+  // Roll call helpers
+  function openRollCall(classId: string, studentUsernames: string[]) {
+    const entries: Record<string, boolean> = {};
+    for (const u of studentUsernames) entries[u] = true;
+    setRollEntries((prev) => ({ ...prev, [classId]: entries }));
+    setRollCallOpen((prev) => ({ ...prev, [classId]: true }));
+  }
+
+  function toggleRollEntry(classId: string, username: string) {
+    setRollEntries((prev) => ({
+      ...prev,
+      [classId]: {
+        ...(prev[classId] ?? {}),
+        [username]: !(prev[classId]?.[username] ?? true),
+      },
+    }));
+  }
+
+  function submitRoll(cls: {
+    id: string;
+    name: string;
+    studentUsernames: string[];
+  }) {
+    const entries = rollEntries[cls.id] ?? {};
+    const rollData = cls.studentUsernames.map((u) => ({
+      username: u,
+      present: entries[u] ?? true,
+    }));
+    const tName = teacherName || getTeacherName();
+    submitRollCallStorage(cls.id, cls.name, tName, rollData);
+    setRollCallOpen((prev) => ({ ...prev, [cls.id]: false }));
+    toast.success("Roll call submitted!");
   }
 
   return (
@@ -1351,6 +1442,173 @@ export function TeacherDashboard({ onLogout }: Props) {
                                 </div>
                               )}
                             </div>
+                            {/* Class Chat */}
+                            <div className="mt-4 border-t border-border/40 pt-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-semibold text-foreground flex items-center gap-1">
+                                  <MessageSquare className="w-3.5 h-3.5 text-teacher" />
+                                  Class Chat
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 text-xs gap-1"
+                                  onClick={() =>
+                                    classChatOpen[cls.id]
+                                      ? closeClassChat(cls.id)
+                                      : openClassChat(cls.id)
+                                  }
+                                >
+                                  {classChatOpen[cls.id]
+                                    ? "Close"
+                                    : "Open Chat"}
+                                </Button>
+                              </div>
+                              {classChatOpen[cls.id] && (
+                                <div className="flex flex-col gap-2">
+                                  <div
+                                    className="bg-muted/30 rounded-lg p-2 h-40 overflow-y-auto flex flex-col gap-1 text-xs"
+                                    style={{ scrollbarWidth: "thin" }}
+                                  >
+                                    {(classChatMessages[cls.id] ?? [])
+                                      .length === 0 ? (
+                                      <p className="text-muted-foreground text-center mt-4">
+                                        No messages yet. Start the conversation!
+                                      </p>
+                                    ) : (
+                                      (classChatMessages[cls.id] ?? []).map(
+                                        (msg) => (
+                                          <div
+                                            key={msg.id}
+                                            className={`flex gap-1.5 ${msg.senderRole === "teacher" ? "flex-row-reverse" : ""}`}
+                                          >
+                                            <div
+                                              className={`max-w-[75%] px-2 py-1 rounded-lg ${msg.senderRole === "teacher" ? "bg-teacher text-white" : "bg-white border border-border"}`}
+                                            >
+                                              <p
+                                                className={`text-[10px] font-semibold mb-0.5 ${msg.senderRole === "teacher" ? "text-white/80" : "text-teacher"}`}
+                                              >
+                                                {msg.senderRole === "teacher"
+                                                  ? "You (Teacher)"
+                                                  : msg.senderUsername}
+                                              </p>
+                                              <p>{msg.text}</p>
+                                            </div>
+                                          </div>
+                                        ),
+                                      )
+                                    )}
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <input
+                                      type="text"
+                                      className="flex-1 text-xs border border-border rounded-lg px-2 py-1.5 bg-background focus:outline-none focus:ring-1 focus:ring-teacher/50"
+                                      placeholder="Type a message..."
+                                      value={classChatInput[cls.id] ?? ""}
+                                      onChange={(e) =>
+                                        setClassChatInput((prev) => ({
+                                          ...prev,
+                                          [cls.id]: e.target.value,
+                                        }))
+                                      }
+                                      onKeyDown={(e) =>
+                                        e.key === "Enter" &&
+                                        sendClassChat(cls.id)
+                                      }
+                                    />
+                                    <Button
+                                      size="sm"
+                                      className="bg-teacher hover:bg-teacher/90 text-white h-7 text-xs px-2"
+                                      onClick={() => sendClassChat(cls.id)}
+                                    >
+                                      Send
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Roll Call */}
+                            {cls.studentUsernames.length > 0 && (
+                              <div className="mt-4 border-t border-border/40 pt-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs font-semibold text-foreground flex items-center gap-1">
+                                    <ClipboardList className="w-3.5 h-3.5 text-teacher" />
+                                    Roll Call
+                                  </span>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-6 text-xs gap-1"
+                                    onClick={() =>
+                                      rollCallOpen[cls.id]
+                                        ? setRollCallOpen((prev) => ({
+                                            ...prev,
+                                            [cls.id]: false,
+                                          }))
+                                        : openRollCall(
+                                            cls.id,
+                                            cls.studentUsernames,
+                                          )
+                                    }
+                                  >
+                                    {rollCallOpen[cls.id]
+                                      ? "Close"
+                                      : "Take Roll"}
+                                  </Button>
+                                </div>
+                                {rollCallOpen[cls.id] && (
+                                  <div className="space-y-2">
+                                    {cls.studentUsernames.map((uname) => {
+                                      const isPresent =
+                                        rollEntries[cls.id]?.[uname] ?? true;
+                                      const stu = allStudents.find(
+                                        (s) =>
+                                          s.username.toLowerCase() ===
+                                          uname.toLowerCase(),
+                                      );
+                                      return (
+                                        <div
+                                          key={uname}
+                                          className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-1.5"
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-full bg-teacher-light flex items-center justify-center">
+                                              <User className="w-3 h-3 text-teacher" />
+                                            </div>
+                                            <span className="text-sm font-medium">
+                                              {stu ? stu.name : uname}
+                                            </span>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              toggleRollEntry(cls.id, uname)
+                                            }
+                                            className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                                              isPresent
+                                                ? "bg-green-100 text-green-700 hover:bg-green-200"
+                                                : "bg-red-100 text-red-700 hover:bg-red-200"
+                                            }`}
+                                          >
+                                            {isPresent
+                                              ? "✓ Present"
+                                              : "✗ Absent"}
+                                          </button>
+                                        </div>
+                                      );
+                                    })}
+                                    <Button
+                                      size="sm"
+                                      className="w-full bg-teacher hover:bg-teacher/90 text-white text-xs mt-2"
+                                      onClick={() => submitRoll(cls)}
+                                    >
+                                      Submit Roll Call
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </CardContent>
                         )}
                       </Card>

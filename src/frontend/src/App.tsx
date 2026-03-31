@@ -13,9 +13,13 @@ import { StudentRegister } from "./components/StudentRegister";
 import { TeacherDashboard } from "./components/TeacherDashboard";
 import { TeacherLogin } from "./components/TeacherLogin";
 import { adminLogout } from "./utils/adminStorage";
+import { upsertParentProfile } from "./utils/parentProfileStorage";
 import {
+  type LinkedStudent,
+  addParentLink,
   getParentLink,
   getParentLinkName,
+  getParentLinks,
   getStudentUsers,
 } from "./utils/studentStorage";
 
@@ -44,8 +48,9 @@ export default function App() {
     null,
   );
   const [parentPrincipal, setParentPrincipal] = useState<string>("");
-  const [linkedStudentName, setLinkedStudentName] = useState<string>("");
-  const [linkedStudentUsername, setLinkedStudentUsername] =
+  // Multi-student support
+  const [linkedStudents, setLinkedStudents] = useState<LinkedStudent[]>([]);
+  const [activeStudentUsername, setActiveStudentUsername] =
     useState<string>("");
 
   const navigate = useCallback((v: AppView) => setView(v), []);
@@ -62,54 +67,112 @@ export default function App() {
 
   const onParentLoggedIn = useCallback((principal: string) => {
     setParentPrincipal(principal);
-    // Check DOB age gate for parents
     const existingDob = getParentDob(principal);
     if (!existingDob) {
+      upsertParentProfile(principal, []);
       setView("parent-dob-check");
       return;
     }
-    // Check if parent already has a linked student
-    const existingLink = getParentLink(principal);
-    if (existingLink) {
-      // Try to get the name: first from localStorage students, then from cached name
-      const students = getStudentUsers();
-      const student = students.find(
-        (s) => s.username.toLowerCase() === existingLink.toLowerCase(),
+    const multiLinks = getParentLinks(principal);
+    if (multiLinks.length > 0) {
+      const localStudents = getStudentUsers();
+      const enriched: LinkedStudent[] = multiLinks.map((l) => {
+        const local = localStudents.find(
+          (s) => s.username.toLowerCase() === l.username.toLowerCase(),
+        );
+        return {
+          username: l.username,
+          name: local?.name || l.name || l.username,
+        };
+      });
+      setLinkedStudents(enriched);
+      setActiveStudentUsername(enriched[0].username);
+      upsertParentProfile(
+        principal,
+        enriched.map((e) => e.username),
       );
-      const name =
-        student?.name || getParentLinkName(principal) || existingLink;
-      setLinkedStudentName(name);
-      setLinkedStudentUsername(existingLink);
       setView("parent-dashboard");
       return;
     }
+    const existingLink = getParentLink(principal);
+    if (existingLink) {
+      const localStudents = getStudentUsers();
+      const stu = localStudents.find(
+        (s) => s.username.toLowerCase() === existingLink.toLowerCase(),
+      );
+      const name = stu?.name || getParentLinkName(principal) || existingLink;
+      setLinkedStudents([{ username: existingLink, name }]);
+      setActiveStudentUsername(existingLink);
+      upsertParentProfile(principal, [existingLink]);
+      setView("parent-dashboard");
+      return;
+    }
+    upsertParentProfile(principal, []);
     setView("parent-link-student");
   }, []);
 
   const onParentDobConfirmed = useCallback(() => {
-    const existingLink = getParentLink(parentPrincipal);
-    if (existingLink) {
-      const students = getStudentUsers();
-      const student = students.find(
-        (s) => s.username.toLowerCase() === existingLink.toLowerCase(),
+    const p = parentPrincipal;
+    const multiLinks = getParentLinks(p);
+    if (multiLinks.length > 0) {
+      const localStudents = getStudentUsers();
+      const enriched: LinkedStudent[] = multiLinks.map((l) => {
+        const local = localStudents.find(
+          (s) => s.username.toLowerCase() === l.username.toLowerCase(),
+        );
+        return {
+          username: l.username,
+          name: local?.name || l.name || l.username,
+        };
+      });
+      setLinkedStudents(enriched);
+      setActiveStudentUsername(enriched[0].username);
+      upsertParentProfile(
+        p,
+        enriched.map((e) => e.username),
       );
-      const name =
-        student?.name || getParentLinkName(parentPrincipal) || existingLink;
-      setLinkedStudentName(name);
-      setLinkedStudentUsername(existingLink);
       setView("parent-dashboard");
       return;
     }
+    const existingLink = getParentLink(p);
+    if (existingLink) {
+      const localStudents = getStudentUsers();
+      const stu = localStudents.find(
+        (s) => s.username.toLowerCase() === existingLink.toLowerCase(),
+      );
+      const name = stu?.name || getParentLinkName(p) || existingLink;
+      setLinkedStudents([{ username: existingLink, name }]);
+      setActiveStudentUsername(existingLink);
+      upsertParentProfile(p, [existingLink]);
+      setView("parent-dashboard");
+      return;
+    }
+    upsertParentProfile(p, []);
     setView("parent-link-student");
   }, [parentPrincipal]);
 
   const onStudentLinked = useCallback(
     (studentUsername: string, studentName: string) => {
-      setLinkedStudentName(studentName);
-      setLinkedStudentUsername(studentUsername);
+      addParentLink(parentPrincipal, studentUsername, studentName);
+      const updated = getParentLinks(parentPrincipal);
+      const enriched: LinkedStudent[] = updated.map((l) => {
+        if (l.username.toLowerCase() === studentUsername.toLowerCase())
+          return { username: l.username, name: studentName };
+        return l;
+      });
+      setLinkedStudents(enriched);
+      setActiveStudentUsername(studentUsername);
+      upsertParentProfile(
+        parentPrincipal,
+        enriched.map((e) => e.username),
+      );
       setView("parent-dashboard");
     },
-    [],
+    [parentPrincipal],
+  );
+
+  const activeStudent = linkedStudents.find(
+    (l) => l.username.toLowerCase() === activeStudentUsername.toLowerCase(),
   );
 
   return (
@@ -162,10 +225,14 @@ export default function App() {
       {view === "teacher-dashboard" && (
         <TeacherDashboard onLogout={() => navigate("landing")} />
       )}
-      {view === "parent-dashboard" && (
+      {view === "parent-dashboard" && linkedStudents.length > 0 && (
         <ParentDashboard
-          linkedStudentName={linkedStudentName}
-          linkedStudentUsername={linkedStudentUsername}
+          linkedStudentName={activeStudent?.name ?? ""}
+          linkedStudentUsername={activeStudentUsername}
+          allLinkedStudents={linkedStudents}
+          activeStudentUsername={activeStudentUsername}
+          onSwitchStudent={(u) => setActiveStudentUsername(u)}
+          onAddStudent={() => setView("parent-link-student")}
           onLogout={() => navigate("landing")}
         />
       )}
