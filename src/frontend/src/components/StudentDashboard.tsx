@@ -64,6 +64,7 @@ import {
   getOrCreateVerificationCode,
   getStudentAge,
   getStudentUsers,
+  pingStudentOnline,
   updateStudentDob,
 } from "../utils/studentStorage";
 import { getWarningsForStudent } from "../utils/supportStorage";
@@ -186,6 +187,16 @@ export function StudentDashboard({ student, onLogout }: Props) {
     refreshUnread();
     const timer = setInterval(refreshUnread, 1500);
     return () => clearInterval(timer);
+  }, [student.username]);
+
+  // Ping online status every 10 seconds so roll call can detect this student
+  useEffect(() => {
+    pingStudentOnline(student.username);
+    const interval = setInterval(
+      () => pingStudentOnline(student.username),
+      10000,
+    );
+    return () => clearInterval(interval);
   }, [student.username]);
 
   // My Classes state

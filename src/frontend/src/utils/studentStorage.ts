@@ -289,3 +289,28 @@ export function removeParentLink(principal: string, username: string): void {
     // ignore
   }
 }
+
+// --- Online status tracking ---
+const ONLINE_STATUS_KEY = "tuitions_student_online_status";
+
+export function pingStudentOnline(username: string): void {
+  try {
+    const raw = localStorage.getItem(ONLINE_STATUS_KEY);
+    const status: Record<string, number> = raw ? JSON.parse(raw) : {};
+    status[username.toLowerCase()] = Date.now();
+    localStorage.setItem(ONLINE_STATUS_KEY, JSON.stringify(status));
+  } catch {}
+}
+
+export function isStudentOnline(username: string): boolean {
+  try {
+    const raw = localStorage.getItem(ONLINE_STATUS_KEY);
+    if (!raw) return false;
+    const status: Record<string, number> = JSON.parse(raw);
+    const last = status[username.toLowerCase()];
+    if (!last) return false;
+    return Date.now() - last < 30000;
+  } catch {
+    return false;
+  }
+}

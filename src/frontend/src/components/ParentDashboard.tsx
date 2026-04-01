@@ -314,6 +314,33 @@ export function ParentDashboard({
       </div>
 
       <main className="flex-1 px-4 sm:px-6 py-8 max-w-6xl mx-auto w-full -mt-4">
+        {/* Switch Student Button */}
+        {allLinkedStudents.length > 1 && (
+          <div className="flex items-center gap-3 mb-6 p-4 bg-white rounded-xl border border-[#1B2B50]/10 shadow-sm">
+            <span className="text-sm text-muted-foreground font-medium whitespace-nowrap">
+              Viewing:
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {allLinkedStudents.map((s) => (
+                <button
+                  key={s.username}
+                  type="button"
+                  data-ocid="parent.switch_student.button"
+                  onClick={() => onSwitchStudent?.(s.username)}
+                  className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition-colors ${
+                    s.username.toLowerCase() ===
+                    linkedStudentUsername?.toLowerCase()
+                      ? "bg-[#1B2B50] text-white border-[#1B2B50]"
+                      : "bg-white text-[#1B2B50] border-[#1B2B50]/30 hover:border-[#1B2B50] hover:bg-[#1B2B50]/5"
+                  }`}
+                >
+                  {s.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Child Progress Card */}
         <section className="mb-8">
           <h2 className="font-display text-xl font-bold text-foreground mb-4">

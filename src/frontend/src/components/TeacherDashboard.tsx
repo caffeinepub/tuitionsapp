@@ -87,7 +87,7 @@ import {
   updateQuiz,
 } from "../utils/quizStorage";
 import { submitRollCall as submitRollCallStorage } from "../utils/rollCallStorage";
-import { getStudentUsers } from "../utils/studentStorage";
+import { getStudentUsers, isStudentOnline } from "../utils/studentStorage";
 import {
   type TpChatMessage,
   getTpMessages,
@@ -633,7 +633,7 @@ export function TeacherDashboard({ onLogout }: Props) {
   // Roll call helpers
   function openRollCall(classId: string, studentUsernames: string[]) {
     const entries: Record<string, boolean> = {};
-    for (const u of studentUsernames) entries[u] = true;
+    for (const u of studentUsernames) entries[u] = isStudentOnline(u);
     setRollEntries((prev) => ({ ...prev, [classId]: entries }));
     setRollCallOpen((prev) => ({ ...prev, [classId]: true }));
   }
@@ -1576,8 +1576,26 @@ export function TeacherDashboard({ onLogout }: Props) {
                                             <div className="w-6 h-6 rounded-full bg-teacher-light flex items-center justify-center">
                                               <User className="w-3 h-3 text-teacher" />
                                             </div>
+                                            <span
+                                              className={`w-2 h-2 rounded-full ${
+                                                isStudentOnline(uname)
+                                                  ? "bg-green-500"
+                                                  : "bg-gray-400"
+                                              }`}
+                                            />
                                             <span className="text-sm font-medium">
                                               {stu ? stu.name : uname}
+                                            </span>
+                                            <span
+                                              className={`text-xs ${
+                                                isStudentOnline(uname)
+                                                  ? "text-green-600"
+                                                  : "text-gray-400"
+                                              }`}
+                                            >
+                                              {isStudentOnline(uname)
+                                                ? "Online"
+                                                : "Offline"}
                                             </span>
                                           </div>
                                           <button
