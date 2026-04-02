@@ -16,13 +16,91 @@ interface Message {
 // ── Teacher-mode responses ──────────────────────────────────────────────────
 function teacherResponse(input: string): string {
   const q = input.toLowerCase();
+  const original = input;
 
+  // Helper: extract the topic the teacher wants to write about/for
+  function extractTopic(str: string): string {
+    // Try to grab everything after about/regarding/on/for/to
+    const match = str.match(/(?:about|regarding|on|for|to)\s+(.+)/i);
+    if (match) return match[1].trim();
+    // Otherwise strip the action verb + object word and return the remainder
+    const stripped = str
+      .replace(
+        /^(craft|write|draft|compose|create|generate|make|send|prepare|help me write|help write)\s+(a\s+|an\s+)?(message|email|announcement|note|letter|reminder|feedback|reply|text|post|update|summary|report|plan|lesson plan|quiz|test|template)?\s*(about|for|regarding|on|to)?\s*/i,
+        "",
+      )
+      .trim();
+    return stripped || "this topic";
+  }
+
+  // ── PRIORITY 1: Action intents — user wants the bot to generate actual content
+  const isActionRequest =
+    /^(craft|write|draft|compose|create|generate|make|help me write|help write|send|prepare)\b/i.test(
+      q,
+    ) ||
+    /(craft|write|draft|compose|generate|create|make)\s+(a\s+|an\s+)?(message|email|announcement|note|letter|reminder|feedback|reply|text|post|update|report|plan|quiz|test)/i.test(
+      q,
+    );
+
+  if (isActionRequest) {
+    const topic = extractTopic(original);
+    const topicCap = topic.charAt(0).toUpperCase() + topic.slice(1);
+
+    // Announcement / event / news
+    if (
+      /announcement|news|update|notice|event|class.*coming|coming.*class|session|workshop|free.*class|special.*class|class.*special/i.test(
+        q,
+      )
+    ) {
+      return `Here's a ready-to-send announcement:\n\n"Hi everyone! 🎉 ${topicCap}. This is a wonderful opportunity — make sure you don't miss it! Stay tuned for more details on the date, time, and location. If you have any questions, feel free to reach out.\n\nBest,\n[Teacher Name]"\n\nFeel free to personalise the date, time, and any other details before sending!`;
+    }
+
+    // Feedback / comment for a student
+    if (/feedback|comment|review|report.*student|student.*report/i.test(q)) {
+      return `Here's some feedback you can adapt:\n\n"Dear [Student Name],\n\n${topicCap}. Your effort and dedication are clearly showing in your work — keep building on this strong foundation. One area to focus on going forward: push yourself to go a little deeper in your explanations and support your points with examples. Overall, you should be very proud of your progress!\n\nKeep it up,\n[Teacher Name]"\n\nReplace the bracketed parts with specific details for the student!`;
+    }
+
+    // Parent / guardian message
+    if (/parent|guardian|family/i.test(q)) {
+      return `Here's a parent message you can use:\n\n"Dear Parent/Guardian,\n\nI hope this message finds you well. I wanted to reach out regarding ${topic}. Your child has been working hard and I'd love to keep you informed as we move forward. Please don't hesitate to get in touch if you have any questions or would like to discuss further.\n\nKind regards,\n[Teacher Name]"\n\nPersonalise with specific student details before sending!`;
+    }
+
+    // Absent / missed class message
+    if (/absent|miss|not.*attend|attendance/i.test(q)) {
+      return `Here's a check-in message:\n\n"Hi [Student Name], I noticed you were absent recently and wanted to check in — I hope everything is okay! We covered ${topic} while you were away. I've kept a summary for you. Let me know if you'd like to catch up or if you need any help getting back up to speed.\n\nTake care,\n[Teacher Name]"`;
+    }
+
+    // Motivation / encouragement
+    if (/motivat|encourage|struggling|low.*grade|fail|boost/i.test(q)) {
+      return `Here's an encouraging message:\n\n"Hi [Student Name], I just wanted to reach out and say — I see how hard you've been working, and that effort truly matters. Regarding ${topic}: remember that every step forward counts, no matter how small. I believe in you, and I'm here to support you every step of the way. Let's tackle this together!\n\nYour teacher,\n[Teacher Name]"`;
+    }
+
+    // Late / overdue / missing assignment
+    if (
+      /late|overdue|submit|deadline|assignment.*missing|missing.*assignment/i.test(
+        q,
+      )
+    ) {
+      return `Here's a gentle reminder message:\n\n"Hi [Student Name], just a quick note — I noticed ${topic}. These things happen, and I want to make sure you're okay. If you need a short extension or any help, please just let me know. I'd rather we sort this out together than have you feel overwhelmed.\n\nBest,\n[Teacher Name]"`;
+    }
+
+    // Lesson plan
+    if (/lesson plan|plan.*lesson|scheme|curriculum|unit/i.test(q)) {
+      return `Here's a lesson plan outline for ${topic}:\n\n📌 Objective: Students will understand the key concepts of ${topic}\n\n1. Hook (5 min): Start with a question or surprising fact related to the topic\n2. Direct Teaching (15 min): Explain the core ideas clearly, use visual aids if possible\n3. Guided Practice (10 min): Work through examples together as a class\n4. Independent Activity (15 min): Students apply what they've learned\n5. Exit Ticket (5 min): Ask students to write one thing they learned today\n\nAdjust timings based on your class length. Want me to suggest specific activities for any section?`;
+    }
+
+    // Generic message / email / note
+    return `Here's a message you can send:\n\n"Hi [Student Name / Class],\n\n${topicCap}. If you have any questions or need more information, please don't hesitate to reach out — I'm always happy to help.\n\nBest wishes,\n[Teacher Name]"\n\nFeel free to adjust the tone or add specific details before sending!`;
+  }
+
+  // ── PRIORITY 2: Greetings and meta questions
   if (/hello|hi|hey|good morning|good afternoon/.test(q))
     return "Hello! I'm Free Time Robot 🤖 — your AI teaching assistant. I can help you craft messages for students, suggest feedback wording, give class management tips, plan lessons, handle difficult situations, and much more. What do you need today?";
 
   if (/help|what can you do|what do you do/.test(q))
     return "I can help you with: ✏️ writing messages to students and parents, 📝 giving grade feedback, 🏫 managing student behaviour, 📚 planning lessons and assessments, 💬 communication strategies, 📋 tracking progress, and much more. Just describe your situation!";
 
+  // ── PRIORITY 3: Advice / tips patterns (unchanged)
   if (
     /student.*message|reply.*student|respond.*student|what.*say.*student/.test(
       q,
@@ -51,12 +129,10 @@ function teacherResponse(input: string): string {
   if (/lesson|plan|prepare|teach/.test(q))
     return "A strong lesson has three parts: a hook to grab attention (a question, story, or challenge), the core teaching content broken into digestible chunks, and a quick check for understanding at the end. Vary your delivery — mix explanation, examples, and student activity to keep engagement high.";
 
-  // ── NEW PATTERNS ──────────────────────────────────────────────────────────
-
   if (/manage|organise|organize|handle|control/.test(q))
     return "Great student management comes down to three things: consistency (same rules, every day), relationships (know your students by name and interest), and clarity (be explicit about expectations). Start each week with a brief reset — remind the class of norms and celebrate what's going well.";
 
-  if (/message|email|write|draft|compose|send/.test(q))
+  if (/message|email/.test(q))
     return "When crafting a message to a student or parent, use this structure: (1) Open with something genuine and positive, (2) State the situation clearly and factually, (3) Share what you'd like to happen next, (4) Invite a response. Would you like me to help draft a specific message? Tell me who it's for and the situation.";
 
   if (/feedback|comment|report|review/.test(q))
@@ -92,7 +168,7 @@ function teacherResponse(input: string): string {
   if (/student/.test(q))
     return "It sounds like you have a specific student situation in mind. I can help with: writing a message to them, giving targeted feedback, handling a behaviour issue, tracking their progress, or motivating them. Could you tell me a bit more — for example, what's the challenge or what outcome you'd like? I'll give you specific advice.";
 
-  return "I'm here to help! I can assist with: 🏫 managing students, ✉️ crafting messages, 📝 writing feedback, 📚 lesson planning, 📊 tracking progress, 🗣️ communication tips, and more. Try asking something like 'How do I write feedback for a struggling student?' or 'Help me message a student who missed class.' What do you need?";
+  return "I'm here to help! I can assist with: 🏫 managing students, ✉️ crafting messages, 📝 writing feedback, 📚 lesson planning, 📊 tracking progress, 🗣️ communication tips, and more. Try asking something like 'Craft a message about the upcoming parent evening' or 'Write feedback for a student who did well on their essay.' What do you need?";
 }
 
 // ── Student-mode responses ──────────────────────────────────────────────────
@@ -375,6 +451,7 @@ export function FreeTimeRobot({ mode }: FreeTimeRobotProps) {
                       fontFamily: "'Poppins', sans-serif",
                       fontSize: 12.5,
                       lineHeight: 1.55,
+                      whiteSpace: "pre-wrap",
                     }}
                   >
                     {m.text}
@@ -448,7 +525,7 @@ export function FreeTimeRobot({ mode }: FreeTimeRobotProps) {
                 onKeyDown={handleKey}
                 placeholder={
                   mode === "teacher"
-                    ? "Ask about managing students..."
+                    ? "e.g. Craft a message about the upcoming test..."
                     : "Ask me anything..."
                 }
                 style={{
