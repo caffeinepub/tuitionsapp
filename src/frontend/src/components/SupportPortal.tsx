@@ -45,70 +45,209 @@ type HelpyMessage = {
 
 function getHelpyResponse(input: string): string {
   const q = input.toLowerCase();
-  if (q.includes("quiz") || q.includes("test") || q.includes("builder")) {
-    return "To create a quiz or test, go to your Teacher Dashboard and click the 'Quiz & Test Builder' section. You can set a title, subject, grade level, add questions (multiple choice, short answer, true/false), configure settings like time limit and due date, then assign it to students. Students will see it in their 'My Quizzes' section.";
-  }
-  if (
-    q.includes("class") &&
-    (q.includes("create") || q.includes("manage") || q.includes("add student"))
-  ) {
-    return "To create a class, go to the 'My Classes' section in your Teacher Dashboard, click 'Create Class', give it a name and subject. You can search for students and add them directly. Each class gets a unique class code — share it with students so they can join by entering the code in their dashboard.";
-  }
-  if (q.includes("join") && q.includes("class")) {
-    return "To join a class, ask your teacher for the class code. Then go to 'My Classes' on your Student Dashboard, enter the class code in the 'Join a Class' field and click Join. You'll instantly be added to the class.";
-  }
-  if (q.includes("report") || q.includes("flag")) {
-    return "To report a user, click the flag icon (🚩 Report User) in your dashboard header. Select the user role (Student, Teacher, or Parent), enter their name, choose a reason, and submit. The admin will review it and can ban, warn, or delete the account.";
-  }
-  if (q.includes("ticket")) {
-    return "To submit a support ticket, switch to the 'Leave a Ticket' tab in this Support Portal. Fill in a subject and describe your issue, then click Submit. The admin will respond in the ticket chat and you'll see their reply here.";
-  }
-  if (q.includes("grade") || q.includes("score") || q.includes("marks")) {
-    return "Grades are assigned by your teacher after a session or quiz. After a booking is completed, the teacher can enter a grade (e.g. A, B, 85%) which instantly appears in your Student Dashboard under 'My Grades'. Parents linked to the student account can also see grades in real time.";
-  }
-  if (q.includes("book") || q.includes("session") || q.includes("call")) {
-    return "To book a session, browse teachers on your Student Dashboard, view their assignments, and click 'Book'. You can choose between a chat session or a call (when available). After booking, the teacher is notified and will initiate the session. You'll see your booked sessions in your dashboard.";
-  }
-  if (
-    q.includes("parent") &&
-    (q.includes("link") || q.includes("connect") || q.includes("account"))
-  ) {
-    return "To link a parent account, first note your 6-digit verification code from your Student Dashboard (look for the 'Share with Parent' section). Then the parent logs in using Internet Identity, clicks 'Link Student Account', and enters your username and 6-digit code. Once verified, they'll see your grades and sessions.";
-  }
-  if (q.includes("chat") && q.includes("admin")) {
-    return "Switch to the 'Chat with Admin' tab to send a direct private message to the admin. They typically respond within a short time. Your conversation is private and only visible to you and the admin.";
-  }
-  if (q.includes("announcement")) {
-    return "Teachers can post announcements to a class from the class card in 'My Classes'. Students enrolled in that class will see the announcement displayed on their class card in the Student Dashboard.";
-  }
-  if (q.includes("warning") || q.includes("banned") || q.includes("ban")) {
-    return "If you received a warning, it will appear as an amber banner on your dashboard. This is issued by the admin. If you believe it was in error, use the 'Chat with Admin' tab to message the admin directly. Banned accounts are logged out automatically.";
-  }
-  if (
-    q.includes("password") ||
-    q.includes("forgot") ||
-    q.includes("login") ||
-    q.includes("sign in")
-  ) {
-    return "Students log in with a username and password. If you forgot your password, click 'Forgot Password' on the login page. Teachers and Parents log in using Internet Identity — if you've lost access, use the 'Forgot/Lost Access' option on the login screen.";
-  }
-  if (
-    q.includes("profile") ||
-    q.includes("picture") ||
-    q.includes("award") ||
-    q.includes("experience")
-  ) {
-    return "Teachers can update their profile from the Teacher Dashboard — you can upload a profile picture, list teaching experience, and add awards. This information is visible to parents when they view your teacher profile from their dashboard.";
-  }
+
+  // Greetings
   if (
     q.includes("hello") ||
     q.includes("hi") ||
     q.includes("hey") ||
-    q.includes("help")
-  ) {
-    return "Hello! I'm Helpy 😊 I can help you with quizzes, classes, sessions, grades, reports, tickets, and more. What do you need help with today?";
-  }
-  return "I'm not sure about that one! For specific issues, try the 'Chat with Admin' tab or submit a ticket under 'Leave a Ticket'. The admin will be happy to help you directly.";
+    q.includes("help") ||
+    q.includes("what can you do")
+  )
+    return "Hello! I'm Helpy 😊 I can help with quizzes, classes, sessions, grades, reports, tickets, roll call, parent linking, announcements, warnings, profile setup, the leaderboard, AI tools, and more. What do you need help with today?";
+
+  // Quiz & Test Builder
+  if (q.includes("quiz") || q.includes("test") || q.includes("builder"))
+    return "To create a quiz or test, go to your Teacher Dashboard and click 'Quiz & Test Builder'. Set a title, subject, and grade level, then add questions (multiple choice, short answer, true/false, or fill-in-the-blank). Configure settings like time limit, number of attempts, due date, shuffle, and pass mark. Then assign to individual students, a class, or all students. Students will see it in their 'My Quizzes' section.";
+
+  // AI question generation
+  if (
+    (q.includes("ai") || q.includes("generate")) &&
+    (q.includes("question") || q.includes("quiz"))
+  )
+    return "Teachers can use AI to generate quiz questions! In the Quiz & Test Builder, look for the 'Generate with AI' option. Enter a topic, choose the question type and quantity, then accept or dismiss each suggestion. This saves a lot of time when building assessments.";
+
+  // Class management
+  if (
+    q.includes("class") &&
+    (q.includes("create") ||
+      q.includes("manage") ||
+      q.includes("add student") ||
+      q.includes("how"))
+  )
+    return "To create a class, go to 'My Classes' on the Teacher Dashboard, click 'Create Class', give it a name and subject. You can search for students and add them directly, or share the class code so students can self-join. Each class has its own chat and announcement board.";
+
+  // Join class
+  if (q.includes("join") && q.includes("class"))
+    return "To join a class, ask your teacher for the class code. Then go to 'My Classes' on your Student Dashboard, enter the class code in the 'Join a Class' field, and click Join. You'll be added instantly.";
+
+  // Class code
+  if (q.includes("class code") || (q.includes("code") && q.includes("class")))
+    return "Each class has a unique class code generated when the teacher creates it. Teachers can copy and share this code with students. Students enter it in the 'Join a Class' box on their dashboard. This is useful when a teacher can't find a student manually.";
+
+  // Class chat
+  if (q.includes("class chat") || (q.includes("chat") && q.includes("class")))
+    return "Every class has a Class Chat — a shared message board for all class members including the teacher. Students and teachers can send messages there in real time. Find it by expanding your class card in the 'My Classes' section.";
+
+  // Announcements
+  if (q.includes("announcement"))
+    return "Teachers can post announcements to any class from the class card in 'My Classes'. Click 'Post Announcement', type your message, and submit. Students enrolled in that class will see it displayed on their class card in the Student Dashboard.";
+
+  // Roll call
+  if (q.includes("roll call") || q.includes("attendance") || q.includes("roll"))
+    return "Teachers can take roll call from a class card with enrolled students — click 'Take Roll'. The system automatically detects which students are online (green dot) and marks them as present. Teachers can override any entry before submitting. Submitted rolls are reviewed by the admin in the Roll Calls tab.";
+
+  // Leaderboard
+  if (q.includes("leaderboard") || q.includes("ranking") || q.includes("rank"))
+    return "The leaderboard ranks students by their average grade across all sessions. Students can view it from their dashboard to see where they stand. It updates automatically as new grades are assigned. The current logged-in student is highlighted so they can see their own position at a glance.";
+
+  // Grades
+  if (
+    q.includes("grade") ||
+    q.includes("score") ||
+    q.includes("marks") ||
+    q.includes("result")
+  )
+    return "Grades are assigned by the teacher after a session or quiz. After a booking is completed, the teacher can enter a grade (e.g. A, B, 85%) which appears instantly in the Student Dashboard under 'My Grades'. Parents linked to that student can also see grades in real time from their Parent Dashboard.";
+
+  // Booking / session
+  if (q.includes("book") || q.includes("session") || q.includes("call"))
+    return "To book a session, browse teachers on your Student Dashboard and click 'Book'. After booking, the teacher is notified. You'll see your booked sessions in your dashboard. Teachers can also accept or decline bookings and assign a grade after the session is complete.";
+
+  // Parent linking
+  if (
+    q.includes("parent") &&
+    (q.includes("link") ||
+      q.includes("connect") ||
+      q.includes("account") ||
+      q.includes("verify"))
+  )
+    return "To link a parent: first, find your 6-digit verification code in the Student Dashboard (look for the 'Share with Parent' section). The parent logs in using Internet Identity, clicks 'Link Student Account', and enters your username and verification code. Once linked, the parent can see your grades, sessions, and bookings. The student must log in at least once after the latest update to sync their data.";
+
+  // Parent switching students
+  if ((q.includes("parent") || q.includes("switch")) && q.includes("student"))
+    return "Parents can link multiple students and switch between them. In the Parent Dashboard header, there is a 'Switch Student' button that shows all linked students in a dropdown. Select the student you want to view and the dashboard updates to show their data. The button only appears when 2 or more students are linked.";
+
+  // Chat with admin
+  if (q.includes("chat") && q.includes("admin"))
+    return "Switch to the 'Chat with Admin' tab in the Support Portal to send a direct private message to the admin. They typically respond within a short time. Your conversation is private — only you and the admin can see it.";
+
+  // Ticket
+  if (q.includes("ticket") || q.includes("support request"))
+    return "To submit a support ticket, switch to the 'Leave a Ticket' tab. Fill in a subject and describe your issue, then click Submit. The admin will respond in the ticket chat and you'll see their reply here in the Support Portal.";
+
+  // Report user
+  if (q.includes("report") || q.includes("flag"))
+    return "To report a user, click the flag icon (🚩 Report User) in your dashboard header. Select the user role (Student, Teacher, or Parent), enter their name, choose a reason, and submit. The admin will review it and can ban, warn, or delete the account.";
+
+  // Warning / ban
+  if (q.includes("warning") || q.includes("banned") || q.includes("ban"))
+    return "If you received a warning, it will appear as an amber banner on your dashboard — this is issued by the admin. If you believe it was in error, use the 'Chat with Admin' tab to message directly. Banned accounts are logged out automatically. Warnings are visible to the affected user only, not to other students.";
+
+  // Password / login
+  if (
+    q.includes("password") ||
+    q.includes("forgot") ||
+    q.includes("login") ||
+    q.includes("sign in") ||
+    q.includes("lost access")
+  )
+    return "Students log in with a username and password. If you forgot your password, click 'Forgot Password' on the login page. Teachers and Parents log in using Internet Identity — if you've lost access, use the 'Forgot/Lost Access' option on the login screen for recovery guidance.";
+
+  // Profile setup / teacher profile
+  if (
+    q.includes("profile") ||
+    q.includes("picture") ||
+    q.includes("photo") ||
+    q.includes("award") ||
+    q.includes("experience")
+  )
+    return "Teachers can update their profile from the Teacher Dashboard — upload a profile picture, list teaching experience, and add awards. This information is visible to parents when they view teacher profiles from their dashboard. A complete, professional profile builds trust with parents and students.";
+
+  // Free Time Robot
+  if (
+    (q.includes("free time robot") ||
+      q.includes("robot") ||
+      q.includes("ai assistant")) &&
+    !q.includes("doubt")
+  )
+    return "Free Time Robot is the AI assistant for teachers. It can help craft messages for students or parents, write grade feedback, suggest lesson plans, give class management tips, and more. Find it via the purple sparkle button (bottom-right) on the Teacher Dashboard. Just type what you need — e.g. 'Write a message about the upcoming test' — and it will generate ready-to-use content.";
+
+  // AI Doubt Bot
+  if (
+    q.includes("doubt bot") ||
+    q.includes("ai doubt") ||
+    (q.includes("ai") && q.includes("student") && q.includes("question"))
+  )
+    return "The AI Doubt Bot is available to students. Click the 'Ask AI' button (bottom-right of the Student Dashboard) to open it. You can ask questions about any school subject — Maths, Science, History, English, Computer Science, and more — and get clear, educational answers.";
+
+  // Learning games
+  if (
+    q.includes("game") ||
+    q.includes("learning game") ||
+    q.includes("flashcard") ||
+    q.includes("word scramble")
+  )
+    return "Students can access Learning Games from their dashboard. There are 8 subject categories (Core Academics, Technology, Arts, Languages, Life Skills, Environmental Science, Practical Subjects, Modern Enrichment) and 4 game modes: Flashcard Quiz, Word Scramble, Memory Match, and True/False. Games are topic-relevant and visually engaging. Select a category, pick a topic, and choose a game mode to start!";
+
+  // My Quizzes
+  if (
+    q.includes("my quiz") ||
+    q.includes("student quiz") ||
+    q.includes("assigned quiz")
+  )
+    return "Students can find assigned quizzes in the 'My Quizzes' section of their Student Dashboard. Each quiz shows the subject, time limit, and due date. After completing a quiz, the result appears in the dashboard and the teacher can review per-student performance.";
+
+  // Teacher-parent chat
+  if (
+    (q.includes("teacher") && q.includes("parent") && q.includes("chat")) ||
+    q.includes("tp chat") ||
+    q.includes("private chat")
+  )
+    return "Teachers and parents can chat privately with each other. Teachers access this via the 'Parent Messages' section on their dashboard. Parents use the 'Chat Teacher' button. These conversations are private to the two parties, but the admin can view all teacher-parent chats in the 'TP Chats' tab of the admin panel.";
+
+  // Teacher age restriction
+  if (
+    q.includes("teacher") &&
+    (q.includes("age") || q.includes("18") || q.includes("register"))
+  )
+    return "Teachers must be 18 or older to register on Tuition Skill. Date of birth is required at registration and verified during the first-time setup process. This is a platform requirement to ensure teacher suitability.";
+
+  // Parent age restriction
+  if (
+    q.includes("parent") &&
+    (q.includes("age") || q.includes("25") || q.includes("register"))
+  )
+    return "Parents must be 25 or older to create a parent account on Tuition Skill. Age is verified after logging in with Internet Identity. This helps ensure the platform is used appropriately for family connections.";
+
+  // Reviews
+  if (q.includes("review") || q.includes("rating") || q.includes("feedback"))
+    return "Students aged 16 and over, and parents, can submit reviews from their dashboards. Reviews include a star rating and a comment. They appear publicly on the Tuition Skill home page under 'What Our Community Says'. Admin can manage or remove reviews from the admin panel.";
+
+  // Internet Identity
+  if (
+    q.includes("internet identity") ||
+    q.includes("ii login") ||
+    q.includes("web3 login")
+  )
+    return "Internet Identity is a secure, password-free login system used by teachers and parents on Tuition Skill. It creates a unique, encrypted identity for each device. You don't need a password — it uses biometrics or a security key. If you lose access, use the Internet Identity recovery phrase you saved when you first set it up.";
+
+  // Admin panel
+  if (
+    q.includes("admin") &&
+    (q.includes("panel") || q.includes("access") || q.includes("how"))
+  )
+    return "The admin panel is hidden by default for security. To access it, click the Tuition Skill logo in the top-left of the home page 5 times quickly — the Admin button will appear. It requires the admin password. The admin can manage users, view roll calls, respond to support tickets, review Helpy feedback, and more.";
+
+  // Helpy feedback
+  if (
+    q.includes("helpy") &&
+    (q.includes("feedback") || q.includes("thumbs") || q.includes("rating"))
+  )
+    return "After each Helpy response, you'll see a thumbs up 👍 and thumbs down 👎 button. If you rate thumbs down, you can explain why. All feedback (both positive and negative) is sent to the admin so Helpy can be improved over time.";
+
+  // Fallback
+  return "I'm not sure about that one! For specific issues, try the 'Chat with Admin' tab or submit a ticket under 'Leave a Ticket'. The admin will be happy to help you directly 😊";
 }
 
 const QUICK_REPLIES = [
@@ -120,6 +259,8 @@ const QUICK_REPLIES = [
   "How do I join a class?",
   "How do I book a session?",
   "How do I link my parent account?",
+  "What is Free Time Robot?",
+  "How does roll call work?",
 ];
 
 export function SupportPortal({

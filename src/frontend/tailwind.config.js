@@ -94,8 +94,8 @@ export default {
       },
       boxShadow: {
         xs: "0 1px 2px 0 rgba(0,0,0,0.05)",
-        card: "0 4px 20px -4px oklch(0.28 0.065 260 / 0.12)",
-        "card-hover": "0 12px 32px -8px oklch(0.28 0.065 260 / 0.2)",
+        card: "0 4px 20px -4px oklch(0.28 0.085 258 / 0.14)",
+        "card-hover": "0 12px 32px -8px oklch(0.28 0.085 258 / 0.22)",
       },
       keyframes: {
         "accordion-down": {

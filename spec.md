@@ -1,37 +1,34 @@
-# Tuition Skill
+# Tuition Skill — Portal Colour Upgrade
 
 ## Current State
-- Admin Parents tab shows only parents who have used the support chat (directChats), so parents who registered but never opened support chat are invisible.
-- Parent-student linking supports only one linked student per parent; no switcher.
-- Classes have announcements and class codes but no class-wide chat.
-- No roll call feature for teachers or roll review for admin.
+All three dashboards (Student, Teacher, Parent) use the existing palette:
+- Header gradients: deep navy (#1B2B50) blended with role accent (coral/emerald/amber)
+- Background: body shifting animation between orange/blue/pink/green
+- Cards: white with light border
+- Role token colours defined in index.css as OKLCH values
+- Some hardcoded hex literals in ParentDashboard.tsx (bg-[#1B2B50], text-[#1B2B50])
 
 ## Requested Changes (Diff)
 
 ### Add
-- `parentProfileStorage.ts`: registry that saves a parent profile (principal, name, joinedAt) on every parent login; admin reads this registry.
-- Admin Parents tab: show all registered parents from the new registry (not just support-chat parents), with ban/unban/delete actions.
-- Multi-student linking: `getParentLinks`, `saveParentLink`, `removeParentLink` support an array of linked students per principal. Parent can add additional students from their dashboard. A switcher dropdown lets them pick the active student.
-- Class chat: new `classChatStorage.ts` with send/receive messages per class. StudentDashboard shows a "Class Chat" card per enrolled class. TeacherDashboard shows class chat inline on each expanded class card. All messages stored under key `class_chat_{classId}`.
-- Roll call: `rollCallStorage.ts` stores roll submissions per class with timestamp, teacher, and per-student present/absent status. TeacherDashboard has a "Take Roll Call" button on each class card; teacher marks each student then submits. AdminDashboard gets a new "Roll Calls" tab showing all submitted rolls.
+- A refined, world-class tuition-standard colour system:
+  - **Student portal**: Rich sapphire/indigo primary with gold accent — conveys focus, academic prestige
+  - **Teacher portal**: Deep teal/forest green primary with warm amber accent — professional authority, growth
+  - **Parent portal**: Warm slate/burgundy primary with soft rose accent — trust, warmth, reliability
+- Elevated dashboard header gradients — richer, multi-stop gradients with subtle depth
+- Refined card styling: subtle coloured top-border accent per role, elevated shadow
+- Better contrast and visual hierarchy on stat badges and action buttons
 
 ### Modify
-- `App.tsx`: when a parent logs in (`onParentLoggedIn`), save their profile to the registry. Change `linkedStudentUsername`/`linkedStudentName` state to arrays; pass active student + full list to ParentDashboard.
-- `ParentDashboard.tsx`: add an "Add Another Student" button that opens the linking form inline. Add a student switcher at the top when multiple students are linked.
-- `AdminDashboard.tsx`: replace directChats-based Parents tab with registry-based list; add Roll Calls tab.
-- `classStorage.ts`: no changes (backward compatible).
+- `src/frontend/src/index.css`: Update OKLCH tokens for `--student`, `--student-light`, `--teacher`, `--teacher-light`, `--parent`, `--parent-light`, `--primary`, `--secondary`, `--accent`; update `.dashboard-header-student`, `.dashboard-header-teacher`, `.dashboard-header-parent` gradients
+- Replace hardcoded `bg-[#1B2B50]`/`text-[#1B2B50]` literals in `ParentDashboard.tsx` with semantic token classes
 
 ### Remove
-- Nothing removed.
+- Nothing removed — all features, CRUD, and logic untouched
 
 ## Implementation Plan
-1. Create `parentProfileStorage.ts` with save/get functions.
-2. Create `classChatStorage.ts` with send/get/clear functions.
-3. Create `rollCallStorage.ts` with submit/get functions.
-4. Update `studentStorage.ts`: change `saveParentLink` to support array of links; add `getParentLinks`, `getParentLinkNames`, `removeParentLink`.
-5. Update `App.tsx`: save parent profile on login; manage multi-student state.
-6. Update `ParentLinkStudent.tsx`: accept optional `onLinkedAdditional` mode.
-7. Update `ParentDashboard.tsx`: student switcher + add student button.
-8. Update `TeacherDashboard.tsx`: class chat section + roll call section.
-9. Update `StudentDashboard.tsx`: class chat section per class.
-10. Update `AdminDashboard.tsx`: Parents tab from registry + Roll Calls tab.
+1. Update `index.css` CSS tokens: redesign role colour OKLCH values for student (sapphire), teacher (teal), parent (burgundy/slate)
+2. Upgrade dashboard header gradient CSS classes for all three roles
+3. Update `tailwind.config.js` if role colour tokens need new named keys
+4. Replace hardcoded hex literals in `ParentDashboard.tsx` with token classes
+5. Validate — typecheck, lint, build

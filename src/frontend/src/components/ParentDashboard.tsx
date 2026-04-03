@@ -287,7 +287,7 @@ export function ParentDashboard({
                         if (e.key === "Escape") setSwitchDropdownOpen(false);
                       }}
                     />
-                    <div className="absolute left-0 top-full mt-1.5 z-20 min-w-[160px] bg-white rounded-xl shadow-lg border border-[#1B2B50]/10 py-1 overflow-hidden">
+                    <div className="absolute left-0 top-full mt-1.5 z-20 min-w-[160px] bg-white rounded-xl shadow-lg border border-primary/10 py-1 overflow-hidden">
                       {allLinkedStudents.map((s) => {
                         const isActive =
                           s.username.toLowerCase() ===
@@ -303,8 +303,8 @@ export function ParentDashboard({
                             }}
                             className={`w-full text-left px-4 py-2 text-sm font-medium flex items-center justify-between gap-3 transition-colors ${
                               isActive
-                                ? "bg-[#1B2B50] text-white"
-                                : "text-[#1B2B50] hover:bg-[#1B2B50]/5"
+                                ? "bg-primary text-white"
+                                : "text-primary hover:bg-primary/5"
                             }`}
                           >
                             {s.name}

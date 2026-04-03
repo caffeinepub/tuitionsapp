@@ -14,7 +14,7 @@ function generateAIResponse(question: string): string {
 
   // Math
   if (
-    /algebra|equation|fraction|geometry|calculus|trigonometry|statistics|probability|percentage|number|digit|polynomial|linear|quadratic|integral|derivative|sine|cosine|tangent|mean|median|mode|variance/.test(
+    /algebra|equation|fraction|geometry|calculus|trigonometry|statistics|probability|percentage|percentages?|ratio|proportion|vector|matrix|complex.*number|set.*theory|proof|inequality|sequence|series|number|digit|polynomial|linear|quadratic|integral|derivative|sine|cosine|tangent|mean|median|mode|variance/.test(
       q,
     )
   ) {
@@ -67,7 +67,7 @@ function generateAIResponse(question: string): string {
 
   // Biology
   if (
-    /cell|photosynthesis|dna|evolution|respiration|ecosystem|organism|genetics|protein|chromosome|mitosis|meiosis|natural selection|adaptation|biodiversity|tissue|organ|nervous|immune|blood|digestion|hormone|bacteria|virus/.test(
+    /cell|photosynthesis|dna|evolution|respiration|ecosystem|organism|genetics|protein|chromosome|mitosis|meiosis|natural selection|adaptation|biodiversity|tissue|organ|nervous|immune|blood|digestion|hormone|bacteria|virus|ecology|population|food.*chain|food.*web|habitat|decomposer|producer|consumer/.test(
       q,
     )
   ) {
@@ -143,6 +143,138 @@ function generateAIResponse(question: string): string {
       return "Computers operate using binary — a number system with only two digits: 0 and 1. Each binary digit is called a bit; 8 bits make a byte. Boolean logic uses true/false values with AND, OR, and NOT operations — these correspond directly to logic gates in computer hardware. Understanding binary helps you grasp how computers represent numbers, text (ASCII/Unicode), images, and all digital data at the lowest level!";
     return "Computer Science is the study of computation, algorithms, data structures, and the principles underlying software and hardware systems. Key areas include programming, algorithms & data structures, computer architecture, operating systems, networking, databases, and artificial intelligence. Learning to code is best done by building real projects — start with Python or JavaScript, understand fundamentals before frameworks, and always practice problem-solving on platforms like LeetCode or HackerRank!";
   }
+
+  // Economics / Business Studies
+  if (
+    /economics|supply.*demand|inflation|gdp|market|trade|budget|currency|recession|investment|fiscal|monetary|entrepreneur|business.*plan|profit|revenue|cost|elasticity|capitalism|socialism/.test(
+      q,
+    )
+  ) {
+    if (/supply.*demand|market|price|elasticity/.test(q))
+      return "Supply and demand is the core model in economics. When demand rises (more buyers want a product) and supply stays the same, prices tend to rise. When supply rises (more sellers) and demand stays the same, prices tend to fall. The equilibrium price is where supply equals demand — the 'clearing price' in the market. Price elasticity measures how much demand changes when prices change: necessities (food, medicine) are inelastic (demand barely changes), while luxuries are elastic (demand drops sharply with price increases).";
+    if (/inflation|gdp|recession|economic.*cycle/.test(q))
+      return "Inflation is the general rise in the price level over time, eroding purchasing power. GDP (Gross Domestic Product) measures the total value of goods and services produced in a country — it's the main indicator of economic size and health. A recession occurs when GDP shrinks for two consecutive quarters. The economic cycle moves through expansion (growth), peak, recession, and recovery. Central banks use interest rates to manage inflation — raising rates cools spending, lowering rates stimulates it.";
+    if (/entrepreneur|business.*plan|profit|revenue|cost/.test(q))
+      return "An entrepreneur identifies opportunities, takes risks, and starts businesses. A business plan covers: (1) Business idea and unique value proposition, (2) Target market and competitors, (3) Revenue model (how you make money), (4) Costs (fixed costs like rent, variable costs like materials), (5) Financial projections. Profit = Revenue − Total Costs. A business must cover its costs (break even) before it becomes profitable. Cash flow (when money comes in vs. goes out) is often what determines if a business survives!";
+    return "Economics studies how individuals, businesses, and governments make decisions about allocating scarce resources. Microeconomics looks at individual markets and decisions; macroeconomics looks at entire economies (inflation, unemployment, growth). Key concepts: supply and demand, opportunity cost, elasticity, market structures (perfect competition, monopoly), fiscal policy (government spending/taxes), and monetary policy (interest rates). Understanding economics helps you make sense of prices, wages, business decisions, and global events!";
+  }
+
+  // Psychology
+  if (
+    /psychology|behaviour|cognitive|memory|learning.*theory|pavlov|classical.*condition|operant|piaget|freud|maslow|emotion|perception|consciousness|mental.*health|anxiety|therapy|nature.*nurture/.test(
+      q,
+    )
+  ) {
+    if (/memory|forget|recall|encoding|storage|retrieval/.test(q))
+      return "Memory works in three stages: Encoding (converting information into a storable form), Storage (holding it in short-term or long-term memory), and Retrieval (recalling it when needed). Short-term memory (STM) holds about 7 items for 15–30 seconds. Long-term memory (LTM) has virtually unlimited capacity. Forgetting occurs when memories decay, are displaced, or retrieval cues are absent. Effective learning strategies — spacing, retrieval practice, elaboration — all work by strengthening memory encoding and retrieval!";
+    if (
+      /pavlov|classical.*condition|operant.*condition|skinner|behaviour/.test(q)
+    )
+      return "Behaviourism focuses on observable behaviour rather than internal thoughts. Classical conditioning (Pavlov): a neutral stimulus becomes associated with an unconditioned stimulus to produce a response (e.g., Pavlov's dogs salivating at a bell). Operant conditioning (Skinner): behaviour is shaped by consequences — reinforcement (positive: rewarding the behaviour; negative: removing something unpleasant) increases behaviour, while punishment decreases it. These principles are used in education, therapy, and animal training every day!";
+    if (/piaget|cognitive.*development|stage|development/.test(q))
+      return "Piaget's theory of cognitive development describes four stages: (1) Sensorimotor (0–2 years): understanding through senses and actions, (2) Preoperational (2–7 years): symbolic thinking but egocentric, (3) Concrete Operational (7–11 years): logical thinking about concrete objects, (4) Formal Operational (12+): abstract and hypothetical reasoning. Each stage builds on the last. Piaget believed children are 'little scientists' who actively construct understanding — not just passive recipients of information.";
+    if (/maslow|hierarchy.*need|motivation|self.*actualiz/.test(q))
+      return "Maslow's Hierarchy of Needs arranges human motivations in a pyramid: (1) Physiological needs (food, water, shelter), (2) Safety needs (security, stability), (3) Love/Belonging needs (relationships, community), (4) Esteem needs (achievement, recognition), (5) Self-Actualisation (reaching full potential). The idea is that lower needs must be met before higher ones motivate behaviour. This model is widely applied in education, management, and therapy, though modern research suggests the hierarchy is more fluid than originally proposed.";
+    return "Psychology is the scientific study of mind and behaviour. Key approaches include: Biological (brain, genetics), Behaviourist (observable behaviour, conditioning), Cognitive (thinking, memory, perception), Humanistic (personal growth, self-concept), and Psychodynamic (unconscious mind, Freud). When studying psychology, always consider research methods (experiments, case studies, surveys), ethical guidelines, and the nature vs. nurture debate. Psychology is both scientific and deeply relevant to everyday life!";
+  }
+
+  // Art / Design / Music
+  if (
+    / art |drawing|painting|sculpture|design|colour.*theory|composition|perspective|music|rhythm|melody|harmony|chord|note|instrument|tempo|dynamics|genre|portrait|abstract|impressionism/.test(
+      q,
+    )
+  ) {
+    if (/colour|color|primary|secondary|hue|shade|tint|tone/.test(q))
+      return "Colour theory is the foundation of visual art and design. Primary colours (red, blue, yellow) cannot be mixed from others; combining them makes secondary colours (orange, green, purple). Complementary colours sit opposite each other on the colour wheel (red/green, blue/orange) and create strong contrast. Analogous colours sit next to each other and create harmony. In art, value (lightness/darkness) is just as important as hue — many great paintings work in black and white because the tonal relationships are strong!";
+    if (
+      /composition|rule.*third|balance|perspective|foreground|background/.test(
+        q,
+      )
+    )
+      return "Composition is how you arrange elements within an artwork or design. The Rule of Thirds divides the image into a 3×3 grid — placing key subjects on the intersections creates more dynamic compositions than centring everything. Balance can be symmetrical (mirror image) or asymmetrical (different elements that 'feel' equal in visual weight). Perspective creates the illusion of depth: one-point perspective (one vanishing point) is great for corridors and roads; two-point perspective adds realism to buildings and outdoor scenes.";
+    if (/music|rhythm|melody|harmony|chord|note|beat|tempo|dynamics/.test(q))
+      return "Music theory is the language of music. Rhythm is the pattern of sounds over time (beats, notes, rests). Melody is a sequence of notes that form a recognisable tune — the part you hum. Harmony occurs when two or more notes are played together; chords are the building blocks of harmony. Tempo is the speed of the music (adagio = slow, allegro = fast). Dynamics describe volume (piano = soft, forte = loud). Understanding these elements lets you read, write, and analyse music at a deeper level!";
+    return "Art and Design are about communicating ideas visually through skill, creativity, and intention. Key elements of art: line, shape, colour, value, texture, space, and form. Key principles of design: balance, contrast, emphasis, movement, rhythm, and unity. In music, the elements are rhythm, melody, harmony, timbre, texture, form, and dynamics. When analysing any artwork or piece of music, ask: what choices did the creator make, and why? Great artists make intentional decisions — everything in the work has a reason.";
+  }
+
+  // Physical Education / Sports Science
+  if (
+    /physical.*education|fitness|exercise|sport|muscle|cardiovascular|endurance|strength|flexibility|nutrition|health|body.*system|aerobic|anaerobic|training|injury|hydration/.test(
+      q,
+    )
+  ) {
+    if (
+      /fitness.*component|endurance|strength|flexibility|speed|agility/.test(q)
+    )
+      return "The key components of physical fitness are: Cardiovascular Endurance (ability to sustain aerobic exercise — e.g. running, swimming), Muscular Strength (maximum force a muscle can exert — e.g. lifting), Muscular Endurance (ability to sustain repeated contractions — e.g. press-ups), Flexibility (range of movement at a joint), Speed (rate of movement), Agility (quick change of direction), Balance (maintaining stability), and Coordination (combining movements smoothly). Different sports require different fitness components — a marathon runner prioritises endurance, a gymnast prioritises flexibility!";
+    if (/aerobic|anaerobic|energy.*system|atp/.test(q))
+      return "The body uses three energy systems depending on the intensity and duration of exercise: (1) ATP-PC system (phosphocreatine): very short, explosive bursts (0–10 seconds) — 100m sprint, (2) Lactic acid / glycolytic system: moderate to high intensity (10 seconds – 2 minutes) — 400m run, (3) Aerobic system: low to moderate intensity for longer durations (2+ minutes) — distance running. Understanding energy systems helps athletes and coaches design training programmes that target the right system for their sport!";
+    if (/nutrition|diet|protein|carbohydrate|hydration|vitamin/.test(q))
+      return "Sports nutrition fuels performance and recovery. Carbohydrates are the primary energy source — especially important before endurance events (carb-loading). Proteins repair and build muscle — athletes need more protein than sedentary individuals (1.2–2.0g per kg of body weight daily). Fats provide energy for low-intensity, long-duration activity. Hydration is critical — even mild dehydration reduces performance significantly. Micronutrients (vitamins and minerals) support immune function, bone health, and energy metabolism. Timing meals around training (eating carbs/protein shortly after exercise) aids recovery!";
+    return "Physical Education develops physical literacy — the skills, knowledge, and motivation to be active for life. Key topics include: anatomy and physiology (how the body works), components of fitness, training principles (FITT: Frequency, Intensity, Time, Type), energy systems, nutrition, injury prevention, and sport psychology. Understanding the science behind physical activity helps you train smarter, not just harder. Regular physical activity improves cognitive function, mental health, and academic performance — it's not just about sport!";
+  }
+
+  // Environmental Science / Sustainability
+  if (
+    /environment|climate.*change|global.*warming|carbon|pollution|renewable|fossil.*fuel|sustainability|biodiversity.*loss|deforestation|ecosystem.*service|greenhouse|ozone|recycling|conservation|habitat/.test(
+      q,
+    )
+  ) {
+    if (/climate.*change|global.*warming|greenhouse|carbon.*dioxide/.test(q))
+      return "Climate change refers to long-term shifts in global temperatures and weather patterns. While natural factors play a role, since the Industrial Revolution, human activities — primarily burning fossil fuels (coal, oil, gas) — have dramatically increased atmospheric CO₂ and other greenhouse gases. These gases trap heat (the greenhouse effect), causing global temperatures to rise. Consequences include: rising sea levels, more frequent extreme weather, melting ice caps, and biodiversity loss. The Paris Agreement (2015) set a target to limit warming to 1.5°C above pre-industrial levels.";
+    if (/renewable|solar|wind|fossil.*fuel|energy.*source/.test(q))
+      return "Energy sources are classified as renewable (replenished naturally — solar, wind, hydro, geothermal, tidal) or non-renewable (finite supply — coal, oil, natural gas, nuclear). Fossil fuels currently supply ~80% of global energy but emit CO₂ when burned. Renewable energy is growing rapidly: solar panel costs have dropped 90% since 2010. Transitioning to renewables is essential for reducing greenhouse gas emissions. Each source has trade-offs: solar needs sun, wind needs wind, hydro needs rivers — a diverse energy mix is most reliable.";
+    if (/biodiversity|habitat|extinction|conservation|ecosystem/.test(q))
+      return "Biodiversity refers to the variety of life on Earth — across species, genetic variation within species, and ecosystem diversity. It is declining at an unprecedented rate, with scientists estimating up to 1 million species at risk of extinction. Main drivers: habitat destruction (deforestation, urbanisation), climate change, pollution, overexploitation, and invasive species. Biodiversity loss weakens ecosystems and the services they provide: clean air and water, crop pollination, disease regulation, and carbon storage. Conservation strategies include protected areas, habitat restoration, captive breeding, and international agreements like the Convention on Biological Diversity.";
+    return "Environmental science studies the interactions between living organisms and their physical environment, with particular focus on human impact. Key issues include climate change, biodiversity loss, pollution, deforestation, water scarcity, and sustainable development. The concept of sustainability means meeting present needs without compromising the ability of future generations to meet theirs. Solutions require interdisciplinary thinking — combining biology, chemistry, physics, economics, and politics. Every action, from individual consumption choices to national policy, shapes environmental outcomes!";
+  }
+
+  // Philosophy / Ethics
+  if (
+    /philosophy|ethics|morality|justice|rights|utilitarianism|kant|aristotle|plato|socrates|deontology|virtue.*ethics|consequentialist|free.*will|consciousness|existence|truth|logic|argument|fallacy/.test(
+      q,
+    )
+  ) {
+    if (/ethics|morality|right.*wrong|utilitarianism|deontology|virtue/.test(q))
+      return "Ethics is the branch of philosophy that studies morality — what is right, wrong, good, and bad. Three major ethical theories: (1) Utilitarianism (Bentham, Mill): the right action maximises happiness/utility for the greatest number — outcomes matter. (2) Deontology (Kant): some actions are intrinsically right or wrong regardless of consequences — duties and rules matter. (3) Virtue Ethics (Aristotle): focus on developing good character traits (courage, honesty, compassion) rather than following rules or calculating outcomes. Each theory offers powerful insights and faces serious objections — real moral situations often require using all three!";
+    if (/free.*will|determinism|consciousness|mind.*body/.test(q))
+      return "Free will is the philosophical question of whether humans genuinely choose their actions or whether all choices are determined by prior causes (genetics, environment, brain states). Determinists argue every event — including human decisions — is caused by prior events following natural laws. Libertarians (in the philosophical sense) argue genuine free will exists. Compatibilists argue free will and determinism can coexist — what matters is acting from your own desires without external coercion. The debate connects to questions about moral responsibility: can we blame someone if their actions were determined?";
+    if (/plato|socrates|aristotle|republic|allegory|cave/.test(q))
+      return "The ancient Greeks laid the foundations of Western philosophy. Socrates (469–399 BC) developed the Socratic Method — questioning assumptions to reveal truth. His student Plato argued reality consists of perfect, eternal 'Forms' — physical objects are imperfect copies. The Allegory of the Cave illustrates this: prisoners in a cave mistake shadows for reality; the philosopher escapes to see true Forms. Aristotle (Plato's student) disagreed — he believed knowledge comes from observing the physical world. His work on logic, ethics, politics, and biology shaped Western thought for two millennia.";
+    return "Philosophy asks the most fundamental questions: What exists? (Metaphysics), How do we know? (Epistemology), How should we act? (Ethics), What is beautiful? (Aesthetics), How should society be organised? (Political Philosophy), and What counts as a valid argument? (Logic). Studying philosophy develops critical thinking, clear argumentation, and the ability to evaluate ideas rigorously — skills valuable in every field. When studying philosophy, always try to steelman arguments (present them in their strongest form) before criticising them.";
+  }
+
+  // Study Skills / Learning Strategies
+  if (
+    /study.*skill|how to study|revision.*technique|pomodoro|mind map|flashcard|spaced.*repetition|active.*recall|note.*taking|time.*management|exam.*technique|concentration|focus|memory.*technique/.test(
+      q,
+    )
+  ) {
+    if (/spaced.*repetition|forgetting.*curve|flashcard|anki/.test(q))
+      return "Spaced repetition is one of the most evidence-based study techniques. Instead of cramming, you review material at increasing intervals — right before you're about to forget it. Flashcard apps like Anki use algorithms to schedule reviews optimally. The Forgetting Curve (Ebbinghaus) shows memory decays rapidly without review: you might forget 50% within a day and 80% within a week. But each review resets the curve and makes the memory stronger. Even 10–15 minutes of spaced review daily beats hours of last-minute cramming!";
+    if (/active.*recall|retrieval.*practice|self.*test|past.*paper/.test(q))
+      return "Active recall (retrieval practice) is the most powerful study technique. Instead of re-reading notes, force your brain to recall information: use flashcards, write everything you know from memory, answer practice questions, or try the 'Feynman Technique' — explain the topic as if teaching a 10-year-old. If you can't explain it simply, you don't understand it yet. Studies show retrieval practice produces 50–80% better long-term retention than passive re-reading. Past exam papers are the best form of retrieval practice available!";
+    if (/pomodoro|time.*management|schedule|plan.*study/.test(q))
+      return "The Pomodoro Technique: work for 25 minutes with full focus, then take a 5-minute break. After 4 Pomodoros, take a longer 20–30 minute break. This prevents mental fatigue and creates a sense of urgency that combats procrastination. For a study schedule: (1) Identify all your subjects and topics, (2) Estimate hours needed per topic, (3) Work backwards from exam dates, (4) Build in review sessions (not just first-time learning), (5) Schedule your hardest subjects when your energy is highest (usually morning). A written plan reduces decision fatigue and keeps you accountable!";
+    return "Effective studying is about working smarter, not just longer. The most evidence-backed techniques: (1) Active Recall — test yourself instead of re-reading, (2) Spaced Repetition — review material at increasing intervals, (3) Interleaving — mix subjects/topics rather than blocking one subject for hours, (4) Elaborative Interrogation — ask 'why?' and 'how?' about everything you learn, (5) Concrete Examples — connect abstract concepts to specific real-world examples. Avoid the illusion of learning from highlighting and re-reading — they feel productive but produce weak long-term memory!";
+  }
+
+  // Greetings and casual conversation
+  if (
+    /^(hello|hi|hey|good morning|good afternoon|good evening|hiya|howdy)/i.test(
+      q,
+    )
+  )
+    return "Hi there! 👋 I'm your AI Doubt Solver — here to help you with any academic question. Ask me about Maths, Science, History, Geography, English, Computer Science, Economics, Psychology, Music, Art, and more. What subject are you working on today?";
+
+  if (/how are you|how r u|what's up|wassup/.test(q))
+    return "I'm ready and powered up to help you learn! 🤖 What subject or topic do you need help with today? I cover Maths, Sciences, Humanities, Languages, and more — just ask!";
+
+  if (/thank you|thanks|cheers|appreciate/.test(q))
+    return "You're welcome! 😊 Learning is a journey — keep asking questions, stay curious, and don't be afraid to get things wrong. That's how understanding builds. Is there anything else you'd like to explore?";
+
+  if (/can you help|what can you do|what subjects/.test(q))
+    return "I can help with a wide range of subjects: 📐 Maths (algebra, calculus, statistics), 🔬 Sciences (Physics, Chemistry, Biology), 🌍 Humanities (History, Geography), 📖 English (grammar, writing, literature), 💻 Computer Science, 📊 Economics, 🧠 Psychology, 🎨 Art & Music, and more! Just ask me a question and I'll do my best to explain it clearly.";
 
   // Generic fallback
   return "That's a great question! While I specialize in school subjects like Math, Science, History, English, and Computer Science, I'd suggest breaking your question into smaller parts and looking up each concept separately. Try asking me something more specific — for example, 'What is photosynthesis?' or 'Explain Newton's second law.' Feel free to ask me anything academic!";

@@ -16,8 +16,8 @@
     --popover: 1 0 0;
     --popover-foreground: 0.26 0.075 258;
 
-    /* Primary — deep navy */
-    --primary: 0.26 0.075 258;
+    /* Primary — deep navy (refined) */
+    --primary: 0.28 0.085 258;
     --primary-foreground: 1 0 0;
 
     /* Secondary — light navy tint */
@@ -36,15 +36,21 @@
 
     --border: 0.88 0.016 250;
     --input: 0.88 0.016 250;
-    --ring: 0.26 0.075 258;
+    --ring: 0.28 0.085 258;
 
-    /* Role colors */
-    --student: 0.62 0.175 24;
-    --student-light: 0.95 0.04 24;
-    --teacher: 0.63 0.155 158;
-    --teacher-light: 0.94 0.04 158;
-    --parent: 0.74 0.155 78;
-    --parent-light: 0.96 0.04 78;
+    /* Role colors — world-class tuition palette */
+
+    /* Student — sapphire/indigo academic prestige */
+    --student: 0.45 0.22 264;
+    --student-light: 0.94 0.04 264;
+
+    /* Teacher — deep professional teal */
+    --teacher: 0.46 0.14 185;
+    --teacher-light: 0.93 0.04 185;
+
+    /* Parent — warm burgundy/wine */
+    --parent: 0.46 0.16 12;
+    --parent-light: 0.95 0.04 12;
 
     /* Chart tokens */
     --chart-1: 0.646 0.222 41.116;
@@ -128,26 +134,29 @@
   animation: bg-shift 15s ease infinite;
 }
 
-/* Dashboard gradient header */
+/* Dashboard gradient headers — world-class tuition palette */
 .dashboard-header-student {
   background: linear-gradient(
     135deg,
-    oklch(0.26 0.075 258) 0%,
-    oklch(0.62 0.175 24 / 0.9) 100%
+    oklch(0.22 0.09 258) 0%,
+    oklch(0.42 0.22 264) 50%,
+    oklch(0.36 0.18 280) 100%
   );
 }
 .dashboard-header-teacher {
   background: linear-gradient(
     135deg,
-    oklch(0.26 0.075 258) 0%,
-    oklch(0.63 0.155 158 / 0.9) 100%
+    oklch(0.22 0.09 200) 0%,
+    oklch(0.4 0.14 185) 50%,
+    oklch(0.32 0.1 190) 100%
   );
 }
 .dashboard-header-parent {
   background: linear-gradient(
     135deg,
-    oklch(0.26 0.075 258) 0%,
-    oklch(0.74 0.155 78 / 0.9) 100%
+    oklch(0.22 0.07 15) 0%,
+    oklch(0.42 0.16 12) 50%,
+    oklch(0.35 0.12 350) 100%
   );
 }
 
@@ -157,5 +166,5 @@
 }
 .card-lift:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 32px -8px oklch(0.26 0.075 258 / 0.18);
+  box-shadow: 0 12px 32px -8px oklch(0.28 0.085 258 / 0.2);
 }

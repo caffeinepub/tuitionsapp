@@ -89,6 +89,25 @@ function teacherResponse(input: string): string {
       return `Here's a lesson plan outline for ${topic}:\n\n📌 Objective: Students will understand the key concepts of ${topic}\n\n1. Hook (5 min): Start with a question or surprising fact related to the topic\n2. Direct Teaching (15 min): Explain the core ideas clearly, use visual aids if possible\n3. Guided Practice (10 min): Work through examples together as a class\n4. Independent Activity (15 min): Students apply what they've learned\n5. Exit Ticket (5 min): Ask students to write one thing they learned today\n\nAdjust timings based on your class length. Want me to suggest specific activities for any section?`;
     }
 
+    // Roll call / attendance message
+    if (/roll call|attendance.*message|absent.*notice/.test(q)) {
+      return `Here's an attendance notice you can adapt:\n\n"Dear Students / Parents,\n\nJust a reminder that regular attendance is essential for keeping up with classwork and achieving your best results. ${topicCap}. If your child is absent, please inform us as soon as possible so we can ensure they don't fall behind.\n\nThank you for your support,\n[Teacher Name]"\n\nAdjust the details before sending!`;
+    }
+
+    // Quiz / test announcement message
+    if (
+      /quiz.*message|test.*message|upcoming.*quiz|upcoming.*test|exam.*message/.test(
+        q,
+      )
+    ) {
+      return `Here's a quiz/test notification message:\n\n"Hi [Class / Student Name]! 📝 Just a heads-up — ${topicCap}. Make sure you review your notes, complete any revision tasks set, and get a good night's sleep beforehand. If you have any questions about the format or content, please ask me before the day.\n\nGood luck — I know you'll do great!\n[Teacher Name]"\n\nPersonalise with the specific date, subject, and topics before sending.`;
+    }
+
+    // Progress report / end of term
+    if (/progress.*report|end.*term|report.*card|term.*report/.test(q)) {
+      return `Here's a progress report message template:\n\n"Dear [Parent/Guardian],\n\nI hope you're well. I wanted to share a progress update for [Student Name]. ${topicCap}. Overall, [Student Name] has been working consistently and showing real dedication. There are a few areas we are focusing on to push their results further, which I have outlined below. Please don't hesitate to contact me if you'd like to discuss this further.\n\nBest wishes,\n[Teacher Name]"\n\nAdd specific subject details and grade highlights before sending.`;
+    }
+
     // Generic message / email / note
     return `Here's a message you can send:\n\n"Hi [Student Name / Class],\n\n${topicCap}. If you have any questions or need more information, please don't hesitate to reach out — I'm always happy to help.\n\nBest wishes,\n[Teacher Name]"\n\nFeel free to adjust the tone or add specific details before sending!`;
   }
@@ -167,6 +186,72 @@ function teacherResponse(input: string): string {
 
   if (/student/.test(q))
     return "It sounds like you have a specific student situation in mind. I can help with: writing a message to them, giving targeted feedback, handling a behaviour issue, tracking their progress, or motivating them. Could you tell me a bit more — for example, what's the challenge or what outcome you'd like? I'll give you specific advice.";
+
+  if (/substitut|cover.*class|supply teacher/.test(q))
+    return "When covering a class or setting work for a substitute, prepare a clear instruction sheet: (1) Exact task with step-by-step guidance, (2) Time breakdown per activity, (3) What students should have completed by the end, (4) Who to ask if students have questions. Leaving structured, self-directed work (reading, worksheets, reflection tasks) ensures continuity and reduces disruption.";
+
+  if (/parent.*evening|parents.*night|open.*day|parent.*meet/.test(q))
+    return "Preparing for a parent evening? Here are three key tips: (1) Review each student's grades, attendance, and any notable incidents beforehand, (2) Lead with a positive observation before discussing challenges — it keeps parents receptive, (3) End with a clear, actionable next step both you and the parent can take. Keep each slot brief and focused. If a conversation needs more time, schedule a follow-up call rather than running over.";
+
+  if (
+    /differentiat|mixed.*ability|inclusion|sen|special.*need|support.*student/.test(
+      q,
+    )
+  )
+    return "Differentiating for mixed-ability classes: (1) Use tiered tasks — same topic, different depth (basic, standard, extended), (2) Provide scaffolding for struggling students (sentence starters, word banks, partially completed examples), (3) Stretch confident students with open-ended extension questions, (4) Use flexible grouping — sometimes by ability, sometimes mixed, (5) Check in with SEN students early in the lesson, not just at the end. Small adjustments make a huge difference to inclusion.";
+
+  if (/transition|end.*year|moving.*up|year.*group|leaving.*class/.test(q))
+    return "Managing class transitions (end of year, moving year groups): (1) Write a brief handover note for the receiving teacher covering each student's strengths, support needs, and any pastoral concerns, (2) Celebrate what the class has achieved this year — a short reflection activity helps closure, (3) Prepare students emotionally — normalise that change is exciting and they will adapt quickly, (4) Ensure all grades, assessments, and records are up to date before handover.";
+
+  if (
+    /safeguard|concern|welfare|wellbeing.*student|disclose|disclosure/.test(q)
+  )
+    return "If a student discloses something concerning or you have a safeguarding worry: (1) Listen calmly and without judgment — don't promise confidentiality, (2) Record exactly what was said in the student's own words, as soon as possible, (3) Report it immediately to your Designated Safeguarding Lead (DSL) — do not investigate yourself, (4) Continue to be supportive to the student, but let the DSL lead. Safeguarding always takes priority over everything else.";
+
+  if (/peer.*assess|self.*assess|marking.*scheme|rubric|criteria/.test(q))
+    return "Peer and self-assessment builds metacognitive skills and reduces your marking load. Tips: (1) Always give students a clear success criteria or rubric before the task, (2) Model the process — show students what good feedback looks like, (3) Use structured sentence starters: 'One strength is... One area to improve is...', (4) For self-assessment, ask students to traffic-light their confidence (red/amber/green) — this gives you instant diagnostic data. Ensure students understand that honest, kind feedback is the goal.";
+
+  if (
+    /revision.*plan|revision.*schedule|exam.*prep|prepare.*exam|before.*exam/.test(
+      q,
+    )
+  )
+    return "Helping students prepare for exams: (1) Share a clear revision checklist by topic so students know exactly what to prioritise, (2) Recommend active revision strategies — past papers, flashcards, mind maps, teaching-back — not passive re-reading, (3) Set timed practice questions in class so students experience exam conditions, (4) Remind students that sleep and breaks are part of effective revision — not optional extras, (5) Address exam anxiety directly: normalise nerves and teach simple breathing techniques for the exam room.";
+
+  if (/reward|certificate|praise|recognition|celebrate.*student/.test(q))
+    return "Recognising student achievement boosts motivation and classroom culture. Ideas: (1) Send a positive postcard or message home — parents love hearing good news, (2) Nominate a 'Star of the Week' or 'Most Improved', (3) Use verbal praise that is specific ('I loved how you explained that concept in your own words') not generic ('Good job'), (4) Create a class achievement wall where students can post their proud moments, (5) Certificates for effort (not just results) show every student that their work is valued.";
+
+  if (/group.*work|collaborative|team.*project|partner.*work/.test(q))
+    return "Effective group work requires clear structure: (1) Assign roles (leader, recorder, presenter, timekeeper) to avoid one person doing all the work, (2) Set a clear outcome — what should the group produce by the end?, (3) Give a timeline with checkpoints, (4) Use a simple peer evaluation at the end so students reflect on contribution, (5) For mixed-ability groups, pair students thoughtfully — a confident student can model thinking, but shouldn't complete the task for others. Circulate and check in with each group every few minutes.";
+
+  if (/introvert|quiet.*student|shy|won't.*participat|not.*engaging/.test(q))
+    return "Encouraging quiet or introverted students: (1) Give thinking time before asking for answers — pose the question, give 30 seconds of silent thinking, then take responses, (2) Use written responses (mini-whiteboards, exit tickets, chat tools) so they can contribute without speaking aloud, (3) Use pair-share before whole-class discussion — it's less intimidating to share with one person first, (4) Never put shy students on the spot unexpectedly — let them choose to share, (5) Build one-on-one rapport privately; some students bloom once they trust you.";
+
+  if (
+    /first.*lesson|first.*day|new.*class|meet.*class|introduce.*yourself/.test(
+      q,
+    )
+  )
+    return "Starting well with a new class sets the tone for everything that follows. Tips: (1) Learn names quickly — use a seating plan, name cards, or a fun name game, (2) Establish classroom norms collaboratively — ask students to suggest rules, then shape and agree them together, (3) Be clear about your expectations for behaviour, participation, and homework from day one — consistency matters, (4) Show genuine interest in who they are: a brief 'tell me one thing you enjoy' activity goes a long way, (5) Keep the first lesson engaging and achievable so students leave feeling confident.";
+
+  if (
+    /homework.*policy|homework.*mark|collect.*homework|late.*homework/.test(q)
+  )
+    return "Managing homework effectively: (1) Be clear upfront about your homework expectations — frequency, format, submission method, (2) For late submissions, a neutral check-in ('Is everything okay? The homework wasn't in') works better than an immediate sanction, (3) Not all homework needs full marking — tick-and-flick, self-mark against a model answer, or peer-check are all valid, (4) If a student never submits, investigate the root cause (home environment, comprehension gap, workload) before escalating, (5) Make homework purposeful — students are more likely to do it if it clearly connects to classwork.";
+
+  if (
+    /professional.*development|cpd|training|career|teaching.*qualification/.test(
+      q,
+    )
+  )
+    return "Growing as a teacher: (1) Observe colleagues — even experienced teachers learn from watching others teach, (2) Reflect regularly: after each lesson, note one thing that worked and one to improve, (3) Build a portfolio of your best resources and lesson plans for career progression, (4) Engage with CPD opportunities — subject associations, webinars, and teaching communities are great resources, (5) Mentoring a student teacher or newly qualified colleague deepens your own practice significantly. Teaching is a craft — it improves steadily with deliberate reflection.";
+
+  if (
+    / data |assessment.*data|pupil.*progress|tracking.*data|gap.*analysis/.test(
+      q,
+    )
+  )
+    return "Using student data effectively: (1) Look for patterns across the class — if most students got the same question wrong, it's a teaching gap, not an individual issue, (2) Identify your 'borderline' students and target them with focused support or stretch, (3) Use pre-assessments (short diagnostic tasks) before a new unit to see what students already know, (4) Share data with students in a growth-focused way: 'You scored 65% — your target is 75%. Here's what to focus on.' (5) Data should inform your teaching, not just fill spreadsheets — always ask 'what am I going to do differently because of this?'";
 
   return "I'm here to help! I can assist with: 🏫 managing students, ✉️ crafting messages, 📝 writing feedback, 📚 lesson planning, 📊 tracking progress, 🗣️ communication tips, and more. Try asking something like 'Craft a message about the upcoming parent evening' or 'Write feedback for a student who did well on their essay.' What do you need?";
 }
