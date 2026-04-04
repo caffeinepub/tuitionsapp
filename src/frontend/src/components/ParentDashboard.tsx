@@ -13,9 +13,11 @@ import {
   BarChart3,
   BookOpen,
   Calendar,
+  CalendarDays,
   CheckCircle2,
   ChevronDown,
   ClipboardList,
+  FileText,
   Flag,
   GraduationCap,
   Headphones,
@@ -38,6 +40,10 @@ import {
   markChatRead,
 } from "../utils/assignmentStorage";
 import { addReview } from "../utils/reviewStorage";
+import {
+  type StudentReport,
+  getReportsForStudent,
+} from "../utils/studentReportStorage";
 import type { LinkedStudent } from "../utils/studentStorage";
 import {
   type TpChatMessage,
@@ -49,6 +55,7 @@ import {
   type TeacherProfile,
   getTeacherProfileByName,
 } from "../utils/teacherProfileStorage";
+import { getAllTermSchedules_public } from "../utils/termStorage";
 import { ChatWindow } from "./ChatWindow";
 import { DashboardNav } from "./DashboardNav";
 import { ReportUser } from "./ReportUser";
@@ -81,6 +88,7 @@ export function ParentDashboard({
   const [supportOpen, setSupportOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [switchDropdownOpen, setSwitchDropdownOpen] = useState(false);
+  const [viewingReportId, setViewingReportId] = useState<string | null>(null);
 
   // Parent ban check
   useEffect(() => {
@@ -670,6 +678,311 @@ export function ParentDashboard({
             </div>
           )}
         </section>
+
+        {/* Term & Holidays */}
+        {(() => {
+          const termSchedules = getAllTermSchedules_public();
+          return (
+            <section className="mb-8" data-ocid="parent.term_holidays.section">
+              <h2 className="font-display text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                <CalendarDays className="w-5 h-5 text-parent" />
+                Term &amp; Holidays
+              </h2>
+              {termSchedules.length === 0 ? (
+                <div
+                  data-ocid="parent.term_holidays.empty_state"
+                  className="bg-card border border-border/60 rounded-xl p-6 text-center"
+                >
+                  <CalendarDays className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    No term dates have been scheduled by your child's teachers
+                    yet.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {termSchedules.map((sched) => {
+                    const termDays = sched.termEndDate
+                      ? Math.ceil(
+                          (new Date(`${sched.termEndDate}T00:00:00`).getTime() -
+                            Date.now()) /
+                            (1000 * 60 * 60 * 24),
+                        )
+                      : null;
+                    return (
+                      <div
+                        key={sched.teacherName}
+                        className="bg-card border border-border/60 rounded-xl p-4 shadow-xs"
+                      >
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                          {sched.teacherName}
+                        </p>
+                        {sched.termEndDate && (
+                          <div className="flex items-start gap-2 mb-2">
+                            <CalendarDays className="w-3.5 h-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-sm font-bold text-foreground">
+                                {new Date(
+                                  `${sched.termEndDate}T00:00:00`,
+                                ).toLocaleDateString(undefined, {
+                                  day: "numeric",
+                                  month: "long",
+                                  year: "numeric",
+                                })}
+                              </p>
+                              {termDays !== null && (
+                                <p className="text-xs text-amber-600">
+                                  {termDays > 0
+                                    ? `${termDays} day${termDays !== 1 ? "s" : ""} remaining`
+                                    : termDays === 0
+                                      ? "Term ends today!"
+                                      : `Term ended ${Math.abs(termDays)} day${Math.abs(termDays) !== 1 ? "s" : ""} ago`}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        {sched.holidays.length > 0 && (
+                          <div className="space-y-1">
+                            <p className="text-xs font-semibold text-muted-foreground">
+                              Holidays:
+                            </p>
+                            {sched.holidays.map((h) => (
+                              <div
+                                key={h.id}
+                                className="flex items-center gap-1.5"
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-parent flex-shrink-0" />
+                                <span className="text-xs text-foreground font-medium">
+                                  {h.label}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(
+                                    `${h.startDate}T00:00:00`,
+                                  ).toLocaleDateString(undefined, {
+                                    day: "numeric",
+                                    month: "short",
+                                  })}{" "}
+                                  —{" "}
+                                  {new Date(
+                                    `${h.endDate}T00:00:00`,
+                                  ).toLocaleDateString(undefined, {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  })}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          );
+        })()}
+
+        {/* Student Reports */}
+        {linkedStudentUsername &&
+          (() => {
+            const studentReports = getReportsForStudent(linkedStudentUsername);
+            const viewingReport = viewingReportId
+              ? (studentReports.find((r) => r.id === viewingReportId) ?? null)
+              : null;
+            return (
+              <>
+                <section
+                  className="mb-8"
+                  data-ocid="parent.student_reports.section"
+                >
+                  <h2 className="font-display text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-parent" />
+                    Student Reports
+                  </h2>
+                  {studentReports.length === 0 ? (
+                    <div
+                      data-ocid="parent.student_reports.empty_state"
+                      className="bg-card border border-border/60 rounded-xl p-6 text-center"
+                    >
+                      <FileText className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">
+                        No reports have been generated for {childName} yet.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {studentReports.map((report, idx) => (
+                        <div
+                          key={report.id}
+                          data-ocid={`parent.student_reports.item.${idx + 1}`}
+                          className="bg-card border border-border/60 rounded-xl px-4 py-3 flex items-center justify-between shadow-xs"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                              <FileText className="w-4 h-4 text-purple-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-foreground">
+                                {report.termLabel}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                By {report.teacherName} ·{" "}
+                                {new Date(
+                                  report.generatedAt,
+                                ).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            data-ocid={`parent.student_reports.button.${idx + 1}`}
+                            variant="outline"
+                            className="h-7 text-xs gap-1"
+                            onClick={() => setViewingReportId(report.id)}
+                          >
+                            View
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+
+                {/* Report Detail Dialog */}
+                <Dialog
+                  open={viewingReportId !== null}
+                  onOpenChange={(o) => !o && setViewingReportId(null)}
+                >
+                  <DialogContent
+                    data-ocid="parent.student_report.dialog"
+                    className="sm:max-w-2xl max-h-[90vh] overflow-y-auto"
+                  >
+                    <DialogHeader>
+                      <DialogTitle className="font-display flex items-center gap-2">
+                        <GraduationCap className="w-5 h-5 text-parent" />
+                        Student Report
+                      </DialogTitle>
+                    </DialogHeader>
+                    {viewingReport && (
+                      <div className="space-y-4">
+                        {/* Header info */}
+                        <div className="bg-muted/40 rounded-lg p-4 grid grid-cols-2 gap-3">
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
+                              Student
+                            </p>
+                            <p className="text-sm font-bold text-foreground">
+                              {viewingReport.studentName}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              @{viewingReport.studentUsername}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
+                              Teacher
+                            </p>
+                            <p className="text-sm font-bold text-foreground">
+                              {viewingReport.teacherName}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
+                              Term
+                            </p>
+                            <p className="text-sm font-semibold text-foreground">
+                              {viewingReport.termLabel}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
+                              Generated
+                            </p>
+                            <p className="text-sm text-foreground">
+                              {new Date(
+                                viewingReport.generatedAt,
+                              ).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Grades table */}
+                        {viewingReport.entries.length > 0 && (
+                          <div>
+                            <p className="text-xs font-bold text-foreground uppercase tracking-wide mb-2">
+                              Subject Results
+                            </p>
+                            <div className="rounded-lg border border-border/60 overflow-hidden">
+                              <table className="w-full text-sm">
+                                <thead className="bg-[#1B2B50] text-white">
+                                  <tr>
+                                    <th className="text-left px-3 py-2 text-xs font-semibold uppercase">
+                                      Subject
+                                    </th>
+                                    <th className="text-center px-3 py-2 text-xs font-semibold uppercase">
+                                      Grade
+                                    </th>
+                                    <th className="text-left px-3 py-2 text-xs font-semibold uppercase">
+                                      Comment
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {viewingReport.entries.map((entry, i) => (
+                                    <tr
+                                      key={entry.subject}
+                                      className={
+                                        i % 2 === 0 ? "bg-white" : "bg-muted/20"
+                                      }
+                                    >
+                                      <td className="px-3 py-2.5 font-medium text-foreground">
+                                        {entry.subject}
+                                      </td>
+                                      <td className="px-3 py-2.5 text-center">
+                                        <span className="inline-block px-2 py-0.5 rounded-full bg-[#2BA870] text-white text-xs font-bold">
+                                          {entry.grade}
+                                        </span>
+                                      </td>
+                                      <td className="px-3 py-2.5 text-muted-foreground text-xs leading-relaxed">
+                                        {entry.aiComment}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Overall summary */}
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <p className="text-xs font-bold text-[#1B2B50] uppercase tracking-wide mb-1">
+                            Overall Summary
+                          </p>
+                          <p className="text-sm text-gray-700 leading-relaxed">
+                            {viewingReport.overallSummary}
+                          </p>
+                        </div>
+
+                        <div className="flex justify-end">
+                          <Button
+                            data-ocid="parent.student_report.close_button"
+                            variant="outline"
+                            onClick={() => setViewingReportId(null)}
+                          >
+                            Close
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
+              </>
+            );
+          })()}
 
         {/* Write a Review */}
         <section className="mb-8">

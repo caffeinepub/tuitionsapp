@@ -16,6 +16,7 @@ import {
   BarChart2,
   BookOpen,
   Calendar,
+  CalendarDays,
   Camera,
   CheckCircle,
   ChevronDown,
@@ -35,6 +36,7 @@ import {
   School,
   Search,
   Send,
+  Sparkles,
   Trash2,
   User,
   Users,
@@ -86,7 +88,11 @@ import {
   saveQuiz,
   updateQuiz,
 } from "../utils/quizStorage";
-import { submitRollCall as submitRollCallStorage } from "../utils/rollCallStorage";
+import {
+  type RollCall,
+  getRollCallsForClass,
+  submitRollCall as submitRollCallStorage,
+} from "../utils/rollCallStorage";
 import { getStudentUsers, isStudentOnline } from "../utils/studentStorage";
 import {
   type TpChatMessage,
@@ -109,7 +115,9 @@ import { FreeTimeRobot } from "./FreeTimeRobot";
 import { QuizBuilder } from "./QuizBuilder";
 import { QuizResults } from "./QuizResults";
 import { ReportUser } from "./ReportUser";
+import { StudentReportAI } from "./StudentReportAI";
 import { SupportPortal } from "./SupportPortal";
+import { TermScheduler } from "./TermScheduler";
 
 type Props = {
   onLogout: () => void;
@@ -231,6 +239,11 @@ export function TeacherDashboard({ onLogout }: Props) {
   const [rollEntries, setRollEntries] = useState<
     Record<string, Record<string, boolean>>
   >({});
+  const [rollHistoryOpen, setRollHistoryOpen] = useState<
+    Record<string, boolean>
+  >({});
+  const [studentReportOpen, setStudentReportOpen] = useState(false);
+  const [termSchedulerOpen, setTermSchedulerOpen] = useState(false);
   const [deleteClassConfirm, setDeleteClassConfirm] = useState<string | null>(
     null,
   );
@@ -661,6 +674,7 @@ export function TeacherDashboard({ onLogout }: Props) {
     const tName = teacherName || getTeacherName();
     submitRollCallStorage(cls.id, cls.name, tName, rollData);
     setRollCallOpen((prev) => ({ ...prev, [cls.id]: false }));
+    setRollHistoryOpen((prev) => ({ ...prev, [cls.id]: true }));
     toast.success("Roll call submitted!");
   }
 
@@ -684,6 +698,22 @@ export function TeacherDashboard({ onLogout }: Props) {
           reporterRole="teacher"
           reporterName={teacherName}
           onClose={() => setReportOpen(false)}
+        />
+      )}
+
+      {/* Student Reports AI */}
+      {studentReportOpen && (
+        <StudentReportAI
+          teacherName={teacherName || getTeacherName()}
+          onClose={() => setStudentReportOpen(false)}
+        />
+      )}
+
+      {/* Term Scheduler */}
+      {termSchedulerOpen && (
+        <TermScheduler
+          teacherName={teacherName || getTeacherName()}
+          onClose={() => setTermSchedulerOpen(false)}
         />
       )}
 
@@ -838,6 +868,23 @@ export function TeacherDashboard({ onLogout }: Props) {
           >
             <Calendar className="w-4 h-4" />
             Schedule Session
+          </Button>
+          <Button
+            data-ocid="teacher.student.reports.button"
+            onClick={() => setStudentReportOpen(true)}
+            className="bg-purple-600 hover:bg-purple-700 text-white font-semibold gap-2"
+          >
+            <Sparkles className="w-4 h-4" />
+            Student Reports AI
+          </Button>
+          <Button
+            data-ocid="teacher.term.schedule.button"
+            variant="outline"
+            onClick={() => setTermSchedulerOpen(true)}
+            className="font-semibold gap-2 border-amber-400/50 text-amber-600 hover:bg-amber-50"
+          >
+            <CalendarDays className="w-4 h-4" />
+            Term Schedule
           </Button>
         </div>
 
@@ -1625,6 +1672,62 @@ export function TeacherDashboard({ onLogout }: Props) {
                                     </Button>
                                   </div>
                                 )}
+
+                                {/* Past Roll Calls */}
+                                {rollHistoryOpen[cls.id] &&
+                                  (() => {
+                                    const rolls = getRollCallsForClass(cls.id);
+                                    return (
+                                      <div className="mt-3 border-t border-border/40 pt-3 space-y-2">
+                                        <div className="flex items-center justify-between mb-1">
+                                          <span className="text-xs font-semibold text-foreground flex items-center gap-1">
+                                            <ClipboardCheck className="w-3.5 h-3.5 text-teacher" />
+                                            Roll History
+                                          </span>
+                                          <button
+                                            type="button"
+                                            className="text-xs text-muted-foreground hover:text-foreground underline"
+                                            onClick={() =>
+                                              setRollHistoryOpen((prev) => ({
+                                                ...prev,
+                                                [cls.id]: false,
+                                              }))
+                                            }
+                                          >
+                                            Hide
+                                          </button>
+                                        </div>
+                                        {rolls.length === 0 ? (
+                                          <p className="text-xs text-muted-foreground italic">
+                                            No rolls submitted yet.
+                                          </p>
+                                        ) : (
+                                          rolls.map((roll) => {
+                                            const presentCount =
+                                              roll.entries.filter(
+                                                (e) => e.present,
+                                              ).length;
+                                            const studentMap =
+                                              getStudentUsers().reduce<
+                                                Record<string, string>
+                                              >((acc, s) => {
+                                                acc[s.username.toLowerCase()] =
+                                                  s.name;
+                                                return acc;
+                                              }, {});
+                                            return (
+                                              <RollHistoryItem
+                                                key={roll.id}
+                                                roll={roll}
+                                                presentCount={presentCount}
+                                                studentMap={studentMap}
+                                              />
+                                            );
+                                          })
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
                               </div>
                             )}
                           </CardContent>
@@ -2565,5 +2668,66 @@ function StatCard({
         <p className={`text-2xl font-display font-bold ${color}`}>{value}</p>
       </CardContent>
     </Card>
+  );
+}
+
+function RollHistoryItem({
+  roll,
+  presentCount,
+  studentMap,
+}: {
+  roll: RollCall;
+  presentCount: number;
+  studentMap: Record<string, string>;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const formattedDate = new Date(roll.submittedAt).toLocaleDateString(
+    undefined,
+    { weekday: "short", year: "numeric", month: "short", day: "numeric" },
+  );
+  return (
+    <div className="bg-muted/30 rounded-lg border border-border/40 overflow-hidden">
+      <button
+        type="button"
+        className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-muted/50 transition-colors"
+        onClick={() => setExpanded((e) => !e)}
+      >
+        <span className="text-xs font-medium text-foreground">
+          {formattedDate}
+        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            {presentCount}/{roll.entries.length} present
+          </span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-semibold">
+            {Math.round(
+              (presentCount / Math.max(roll.entries.length, 1)) * 100,
+            )}
+            %
+          </span>
+        </div>
+      </button>
+      {expanded && (
+        <div className="px-3 pb-2 pt-1 space-y-1 border-t border-border/30">
+          {roll.entries.map((entry) => (
+            <div
+              key={entry.username}
+              className="flex items-center justify-between py-0.5"
+            >
+              <span className="text-xs text-muted-foreground">
+                {studentMap[entry.username.toLowerCase()] ?? entry.username}
+              </span>
+              <span
+                className={`text-xs font-semibold ${
+                  entry.present ? "text-green-600" : "text-red-500"
+                }`}
+              >
+                {entry.present ? "✓ Present" : "✗ Absent"}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
