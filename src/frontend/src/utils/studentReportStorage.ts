@@ -17,6 +17,11 @@ export type StudentReport = {
   termLabel: string;
   entries: ReportEntry[];
   overallSummary: string;
+  // NEW FIELDS:
+  teacherSignature?: string; // base64 data URL of drawn signature, or typed text prefixed "typed:"
+  sent?: boolean; // true when teacher has sent the report to student
+  sentAt?: number; // timestamp when sent
+  editedAt?: number; // timestamp of last edit
 };
 
 export function getStudentReports(): StudentReport[] {
@@ -53,4 +58,13 @@ export function getReportsForStudent(studentUsername: string): StudentReport[] {
 
 export function getReportsByTeacher(teacherName: string): StudentReport[] {
   return getStudentReports().filter((r) => r.teacherName === teacherName);
+}
+
+export function updateStudentReport(report: StudentReport): void {
+  const all = getStudentReports();
+  const idx = all.findIndex((r) => r.id === report.id);
+  if (idx >= 0) {
+    all[idx] = report;
+    localStorage.setItem(REPORTS_KEY, JSON.stringify(all));
+  }
 }

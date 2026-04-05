@@ -6,10 +6,12 @@ import {
   CheckCircle,
   GraduationCap,
   MessageSquare,
+  Monitor,
   ShieldCheck,
   Sparkles,
   Star,
   Users,
+  Zap,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import type { AppView } from "../App";
@@ -43,6 +45,7 @@ const roles = [
     iconBg: "bg-student-light",
     iconColor: "text-student",
     btnClass: "bg-student hover:bg-student/90 text-white",
+    glowColor: "oklch(0.45 0.22 264 / 0.15)",
     view: "student-login" as AppView,
   },
   {
@@ -69,6 +72,7 @@ const roles = [
     iconBg: "bg-teacher-light",
     iconColor: "text-teacher",
     btnClass: "bg-teacher hover:bg-teacher/90 text-white",
+    glowColor: "oklch(0.46 0.14 185 / 0.15)",
     view: "teacher-login" as AppView,
   },
   {
@@ -93,6 +97,7 @@ const roles = [
     iconBg: "bg-parent-light",
     iconColor: "text-parent",
     btnClass: "bg-parent hover:bg-parent/90 text-white",
+    glowColor: "oklch(0.46 0.16 12 / 0.15)",
     view: "parent-login" as AppView,
   },
 ] as const;
@@ -146,13 +151,6 @@ function LogoMark({
       <circle cx="33" cy="24.5" r="1.8" fill={color} />
       {/* 4-pointed sparkle above cap */}
       <g transform="translate(18, 5.5)">
-        <path
-          d="M0,-4 C0,-1.5 0,-1.5 0,0 C0,-1.5 0,-1.5 0,-4 Z"
-          stroke={color}
-          strokeWidth="0"
-          fill={color}
-        />
-        {/* sparkle: 4 petals */}
         <path d="M0 -4.2 Q0.7 -1.5 0 0 Q-0.7 -1.5 0 -4.2Z" fill={color} />
         <path d="M0 4.2 Q0.7 1.5 0 0 Q-0.7 1.5 0 4.2Z" fill={color} />
         <path d="M-4.2 0 Q-1.5 0.7 0 0 Q-1.5 -0.7 -4.2 0Z" fill={color} />
@@ -227,37 +225,148 @@ export function LandingPage({ onNavigate }: Props) {
 
       {/* Hero */}
       <main className="flex-1 flex flex-col items-center px-4 py-12">
-        {/* Decorative circles */}
-        <div className="relative w-full max-w-6xl mb-12">
+        {/* === Hero Section === */}
+        <div className="relative w-full max-w-6xl">
+          {/* Animated glow blobs */}
           <div
-            className="absolute -top-16 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full opacity-20 blur-3xl pointer-events-none"
+            className="hero-glow absolute -top-20 left-1/4 w-[520px] h-[320px] rounded-full pointer-events-none"
             style={{
               background:
-                "radial-gradient(ellipse, oklch(0.67 0.19 28) 0%, transparent 70%)",
+                "radial-gradient(ellipse, oklch(0.62 0.175 24 / 0.18) 0%, transparent 70%)",
+              filter: "blur(48px)",
             }}
           />
+          <div
+            className="hero-glow absolute -top-10 right-1/4 w-[420px] h-[260px] rounded-full pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(ellipse, oklch(0.45 0.22 264 / 0.14) 0%, transparent 70%)",
+              filter: "blur(56px)",
+              animationDelay: "1.5s",
+            }}
+          />
+
+          <div
+            className="text-center mb-8 animate-fade-in-up"
+            style={{ animationDelay: "0ms" }}
+          >
+            {/* Premium badge */}
+            <div
+              className="inline-flex items-center gap-2 bg-white/70 border border-white/80 shadow-sm rounded-full px-4 py-1.5 text-sm font-semibold mb-6 backdrop-blur-sm"
+              style={{ color: "#1B2B50" }}
+            >
+              <Sparkles className="w-3.5 h-3.5" style={{ color: "#E8614A" }} />
+              <span>Premium Tutoring Platform</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#2BA870] animate-pulse" />
+            </div>
+
+            <h1 className="font-display text-5xl sm:text-6xl font-bold text-primary leading-tight mb-4">
+              Learning that
+              <br />
+              <span className="relative inline-block">
+                <span
+                  className="italic"
+                  style={{ color: "oklch(var(--student))" }}
+                >
+                  elevates and motivates
+                </span>
+                {/* Animated underline */}
+                <span
+                  className="absolute -bottom-1 left-0 h-0.5 rounded-full"
+                  style={{
+                    width: "100%",
+                    background:
+                      "linear-gradient(90deg, oklch(0.45 0.22 264), oklch(0.62 0.175 24))",
+                    animation: "underline-grow 1.2s ease-out 0.4s both",
+                  }}
+                />
+              </span>{" "}
+              everyone
+            </h1>
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto leading-relaxed">
+              Connect students, teachers, and parents in a seamless educational
+              ecosystem designed for modern and advanced learning.
+            </p>
+          </div>
+
+          {/* Stats bar */}
+          <div
+            className="animate-fade-in-up flex items-center justify-center gap-0 mb-14"
+            style={{ animationDelay: "200ms" }}
+          >
+            <div className="glass-card rounded-2xl shadow-card flex items-center divide-x divide-white/40 overflow-hidden">
+              {[
+                {
+                  icon: GraduationCap,
+                  value: "500+",
+                  label: "Students",
+                  color: "#1B2B50",
+                },
+                {
+                  icon: BookOpen,
+                  value: "100+",
+                  label: "Teachers",
+                  color: "#2BA870",
+                },
+                {
+                  icon: Brain,
+                  value: "50+",
+                  label: "Subjects",
+                  color: "#E8614A",
+                },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="flex items-center gap-2.5 px-5 py-3"
+                >
+                  <stat.icon
+                    className="w-4 h-4 flex-shrink-0"
+                    style={{ color: stat.color }}
+                  />
+                  <span
+                    className="font-bold text-sm"
+                    style={{ color: "#1B2B50" }}
+                  >
+                    {stat.value}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {stat.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
+        {/* Trust bar */}
         <div
-          className="text-center mb-14 animate-fade-in-up"
-          style={{ animationDelay: "0ms" }}
+          className="animate-fade-in-up w-full max-w-3xl mb-12"
+          style={{ animationDelay: "300ms" }}
         >
-          <div className="inline-flex items-center gap-2 bg-primary/8 text-primary border border-primary/20 rounded-full px-4 py-1.5 text-sm font-medium mb-5">
-            <Sparkles className="w-3.5 h-3.5" />
-            Premium Tutoring Platform
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6">
+            {[
+              { icon: ShieldCheck, text: "Secure Login", color: "#1B2B50" },
+              { icon: Zap, text: "AI-Powered Learning", color: "#E8614A" },
+              { icon: Monitor, text: "Works on All Devices", color: "#2BA870" },
+              { icon: MessageSquare, text: "Real-time Chat", color: "#D4A520" },
+            ].map((item) => (
+              <div
+                key={item.text}
+                className="flex items-center gap-2 glass-card rounded-full px-4 py-2 shadow-xs"
+              >
+                <item.icon
+                  className="w-3.5 h-3.5 trust-icon"
+                  style={{ color: item.color }}
+                />
+                <span
+                  className="text-xs font-semibold"
+                  style={{ color: "#1B2B50" }}
+                >
+                  {item.text}
+                </span>
+              </div>
+            ))}
           </div>
-          <h1 className="font-display text-5xl sm:text-6xl font-bold text-primary leading-tight mb-4">
-            Learning that
-            <br />
-            <span className="italic" style={{ color: "oklch(var(--student))" }}>
-              elevates and motivates
-            </span>{" "}
-            everyone
-          </h1>
-          <p className="text-muted-foreground text-lg max-w-xl mx-auto leading-relaxed">
-            Connect students, teachers, and parents in a seamless educational
-            ecosystem designed for modern and advanced learning.
-          </p>
         </div>
 
         {/* Role Cards with Features */}
@@ -278,18 +387,20 @@ export function LandingPage({ onNavigate }: Props) {
             data-ocid="landing.reviews.section"
             className="w-full max-w-5xl mt-20"
           >
-            <h2 className="font-display text-2xl font-bold text-foreground text-center mb-2">
-              What Our Community Says
-            </h2>
-            <p className="text-muted-foreground text-sm text-center mb-8">
-              Real experiences from students and parents
-            </p>
+            <div className="text-center mb-8">
+              <h2 className="font-display text-2xl font-bold text-foreground mb-2">
+                What Our Community Says
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                Real experiences from students and parents
+              </p>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {allCommunityReviews.map((review, i) => (
                 <div
                   key={review.id}
                   data-ocid={`landing.reviews.item.${i + 1}`}
-                  className="bg-card border border-border/60 rounded-2xl shadow-card p-5 flex flex-col gap-3"
+                  className="glass-card rounded-2xl shadow-card p-5 flex flex-col gap-3 hover:shadow-card-hover transition-shadow duration-200"
                 >
                   {/* Stars */}
                   <div className="flex items-center gap-0.5">
@@ -337,12 +448,13 @@ export function LandingPage({ onNavigate }: Props) {
             </div>
           </section>
         )}
+
         {/* Speech / Mission Section */}
         <section
           data-ocid="landing.speech.section"
           className="w-full max-w-4xl mt-12 mb-4"
         >
-          <div className="bg-card border border-border/60 rounded-3xl shadow-card p-8 sm:p-12 text-center relative overflow-hidden">
+          <div className="glass-card rounded-3xl shadow-card p-8 sm:p-12 text-center relative overflow-hidden">
             {/* Decorative quote mark */}
             <div
               className="absolute top-6 left-8 text-8xl font-display font-bold opacity-5 select-none pointer-events-none leading-none"
@@ -350,8 +462,21 @@ export function LandingPage({ onNavigate }: Props) {
             >
               &ldquo;
             </div>
+            {/* Decorative bg gradient */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(ellipse at top left, oklch(0.45 0.22 264 / 0.04) 0%, transparent 60%)",
+              }}
+            />
             <div className="flex items-center justify-center gap-2 mb-6">
-              <Brain className="w-5 h-5 text-primary" />
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center"
+                style={{ background: "oklch(0.28 0.085 258 / 0.1)" }}
+              >
+                <Brain className="w-4 h-4 text-primary" />
+              </div>
               <span className="text-sm font-semibold text-primary uppercase tracking-widest">
                 Our Mission
               </span>
@@ -413,16 +538,47 @@ export function LandingPage({ onNavigate }: Props) {
       </main>
 
       {/* Footer */}
-      <footer className="py-6 text-center text-sm text-muted-foreground">
-        &copy; {new Date().getFullYear()}. Built with love using{" "}
-        <a
-          href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline underline-offset-2 hover:text-foreground transition-colors"
-        >
-          caffeine.ai
-        </a>
+      <footer className="py-8 px-6">
+        {/* Gradient separator */}
+        <div
+          className="w-full max-w-4xl mx-auto h-px mb-6"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent, oklch(0.28 0.085 258 / 0.2), transparent)",
+          }}
+        />
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 max-w-4xl mx-auto">
+          <div className="flex items-center gap-2">
+            <LogoMark size={20} color="#1B2B50" />
+            <span
+              className="text-sm font-semibold"
+              style={{ color: "#1B2B50" }}
+            >
+              Tuition Skill
+            </span>
+          </div>
+          <p className="text-sm text-muted-foreground text-center">
+            &copy; {new Date().getFullYear()}. Built with ❤️ using{" "}
+            <a
+              href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-foreground transition-colors font-medium"
+            >
+              caffeine.ai
+            </a>
+          </p>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3" />
+              Secure
+            </span>
+            <span className="flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              AI-Powered
+            </span>
+          </div>
+        </div>
       </footer>
     </div>
   );
@@ -440,18 +596,44 @@ function RoleCard({
   const Icon = role.icon;
   return (
     <div
-      className="animate-fade-in-up card-lift bg-card rounded-2xl shadow-card overflow-hidden flex flex-col border border-border/60"
+      className="animate-fade-in-up card-lift bg-card rounded-2xl shadow-card overflow-hidden flex flex-col border border-border/60 relative group"
       style={{ animationDelay: delay }}
     >
-      {/* Top color bar */}
-      <div className={`h-1.5 w-full ${role.colorBar}`} />
+      {/* Top gradient color bar — thicker for more premium feel */}
+      <div
+        className="h-2 w-full"
+        style={{
+          background:
+            role.key === "student"
+              ? "linear-gradient(90deg, oklch(0.45 0.22 264), oklch(0.35 0.18 280))"
+              : role.key === "teacher"
+                ? "linear-gradient(90deg, oklch(0.46 0.14 185), oklch(0.38 0.12 200))"
+                : "linear-gradient(90deg, oklch(0.46 0.16 12), oklch(0.38 0.12 350))",
+        }}
+      />
 
-      <div className="p-6 flex flex-col flex-1">
-        {/* Icon */}
-        <div
-          className={`w-12 h-12 rounded-xl ${role.iconBg} flex items-center justify-center mb-4`}
-        >
-          <Icon className={`w-6 h-6 ${role.iconColor}`} />
+      {/* Role-colored glow on hover */}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-2xl"
+        style={{
+          background: `radial-gradient(ellipse at top center, ${role.glowColor} 0%, transparent 65%)`,
+        }}
+      />
+
+      <div className="p-6 flex flex-col flex-1 relative z-10">
+        {/* Icon — larger, with ring effect */}
+        <div className="relative mb-4">
+          <div
+            className={`w-14 h-14 rounded-xl ${role.iconBg} flex items-center justify-center ring-2 ring-white shadow-sm transition-transform duration-200 group-hover:scale-105`}
+          >
+            <Icon className={`w-7 h-7 ${role.iconColor}`} />
+          </div>
+          {/* "Get Started" badge on hover */}
+          <span
+            className={`role-card-hover-badge absolute -top-2 -right-2 text-[10px] font-bold px-2 py-0.5 rounded-full text-white shadow-sm ${role.colorBar}`}
+          >
+            Get Started
+          </span>
         </div>
 
         {/* Content */}
@@ -475,7 +657,7 @@ function RoleCard({
         {/* Button */}
         <Button
           data-ocid={role.ocid}
-          className={`w-full font-semibold gap-2 ${role.btnClass}`}
+          className={`w-full font-semibold gap-2 shadow-sm ${role.btnClass}`}
           onClick={() => onNavigate(role.view)}
         >
           {role.cta}

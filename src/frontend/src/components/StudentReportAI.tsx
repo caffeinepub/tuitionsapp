@@ -8,22 +8,28 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import {
   BookOpen,
+  Check,
+  Edit3,
   FileText,
   GraduationCap,
-  Printer,
+  PenTool,
+  Send,
   Sparkles,
   User,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { getGradesForStudent } from "../utils/assignmentStorage";
 import {
   type StudentReport,
   getReportsByTeacher,
   saveStudentReport,
+  updateStudentReport,
 } from "../utils/studentReportStorage";
 import { getStudentUsers } from "../utils/studentStorage";
 
@@ -140,7 +146,6 @@ function generateAiComment(subject: string, grade: string): string {
   if (isHigh) return pickComment(highComments);
   if (isLow) return pickComment(lowComments);
   if (isMid) return pickComment(midComments);
-  // default mid
   return pickComment(midComments);
 }
 
@@ -169,7 +174,42 @@ function generateOverallSummary(
   if (avg !== null) {
     return `${firstName} has faced some challenges this term. We encourage additional support and revision, particularly in weaker subjects. With focused effort, meaningful improvement is entirely achievable.`;
   }
-  return `${firstName} has completed the term across ${entries.length} subject${entries.length !== 1 ? "s" : ""}. We look forward to continued progress and encourage active engagement in the term ahead.`;
+  return `${firstName} has completed the term across ${entries.length} subject${
+    entries.length !== 1 ? "s" : ""
+  }. We look forward to continued progress and encourage active engagement in the term ahead.`;
+}
+
+// Signature display inside printable report
+function SignatureDisplay({ sig }: { sig?: string }) {
+  if (!sig) {
+    return <div className="border-b border-gray-300 mb-1 h-8" />;
+  }
+  if (sig.startsWith("typed:")) {
+    const typed = sig.slice(6);
+    return (
+      <div className="h-8 flex items-end pb-1 border-b border-gray-300">
+        <span
+          style={{
+            fontFamily: "'Brush Script MT', 'Segoe Script', cursive",
+            fontSize: "1.4rem",
+            color: "#1B2B50",
+          }}
+        >
+          {typed}
+        </span>
+      </div>
+    );
+  }
+  // base64 image
+  return (
+    <div className="h-12 border-b border-gray-300 flex items-end pb-1">
+      <img
+        src={sig}
+        alt="Teacher signature"
+        className="max-h-10 max-w-[200px] object-contain"
+      />
+    </div>
+  );
 }
 
 function PrintableReport({ report }: { report: StudentReport }) {
@@ -196,6 +236,11 @@ function PrintableReport({ report }: { report: StudentReport }) {
           <p className="text-xs text-gray-400">
             Generated: {new Date(report.generatedAt).toLocaleDateString()}
           </p>
+          {report.editedAt && (
+            <p className="text-xs text-gray-400">
+              Edited: {new Date(report.editedAt).toLocaleDateString()}
+            </p>
+          )}
         </div>
       </div>
 
@@ -275,7 +320,7 @@ function PrintableReport({ report }: { report: StudentReport }) {
       {/* Signature line */}
       <div className="grid grid-cols-2 gap-8 mt-8">
         <div>
-          <div className="border-b border-gray-300 mb-1 h-6" />
+          <SignatureDisplay sig={report.teacherSignature} />
           <p className="text-xs text-gray-400">Teacher Signature</p>
         </div>
         <div>
@@ -291,6 +336,298 @@ function PrintableReport({ report }: { report: StudentReport }) {
   );
 }
 
+// Signature Pad component
+function SignaturePad({
+  onSave,
+  existing,
+}: {
+  onSave: (sig: string) => void;
+  existing?: string;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [drawing, setDrawing] = useState(false);
+  const [typedName, setTypedName] = useState(
+    existing?.startsWith("typed:") ? existing.slice(6) : "",
+  );
+  const [activeTab, setActiveTab] = useState(
+    existing && !existing.startsWith("typed:") ? "draw" : "type",
+  );
+
+  // Initialize canvas with existing drawn sig
+  useEffect(() => {
+    if (activeTab === "draw" && existing && !existing.startsWith("typed:")) {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      const img = new Image();
+      img.onload = () => ctx.drawImage(img, 0, 0);
+      img.src = existing;
+    }
+  }, [activeTab, existing]);
+
+  function getPos(
+    e: React.MouseEvent | React.TouchEvent,
+    canvas: HTMLCanvasElement,
+  ) {
+    const rect = canvas.getBoundingClientRect();
+    if ("touches" in e) {
+      return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top,
+      };
+    }
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+
+  function startDraw(e: React.MouseEvent | React.TouchEvent) {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    setDrawing(true);
+    const pos = getPos(e, canvas);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+  }
+
+  function draw(e: React.MouseEvent | React.TouchEvent) {
+    if (!drawing) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const pos = getPos(e, canvas);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.strokeStyle = "#1B2B50";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.stroke();
+  }
+
+  function stopDraw() {
+    setDrawing(false);
+  }
+
+  function clearCanvas() {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function saveDraw() {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL("image/png");
+    onSave(dataUrl);
+  }
+
+  function saveTyped() {
+    if (!typedName.trim()) return;
+    onSave(`typed:${typedName.trim()}`);
+  }
+
+  return (
+    <div className="space-y-3">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="w-full">
+          <TabsTrigger value="draw" className="flex-1 gap-1.5">
+            <PenTool className="w-3.5 h-3.5" />
+            Draw
+          </TabsTrigger>
+          <TabsTrigger value="type" className="flex-1 gap-1.5">
+            <Edit3 className="w-3.5 h-3.5" />
+            Type
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="draw" className="mt-3">
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Draw your signature below:
+            </p>
+            <canvas
+              ref={canvasRef}
+              width={300}
+              height={100}
+              className="border border-dashed border-border rounded-lg bg-white cursor-crosshair touch-none w-full"
+              style={{ maxWidth: 300, height: 100 }}
+              onMouseDown={startDraw}
+              onMouseMove={draw}
+              onMouseUp={stopDraw}
+              onMouseLeave={stopDraw}
+              onTouchStart={startDraw}
+              onTouchMove={draw}
+              onTouchEnd={stopDraw}
+            />
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="text-xs"
+                onClick={clearCanvas}
+              >
+                Clear
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                className="text-xs bg-[#1B2B50] hover:bg-[#1B2B50]/90 text-white gap-1"
+                onClick={saveDraw}
+              >
+                <Check className="w-3 h-3" />
+                Save Signature
+              </Button>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="type" className="mt-3">
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Type your name as a signature:
+            </p>
+            <Input
+              value={typedName}
+              onChange={(e) => setTypedName(e.target.value)}
+              placeholder="Your full name"
+              className="h-9 text-sm"
+            />
+            {typedName && (
+              <div className="bg-white border border-border/60 rounded-lg px-4 py-3">
+                <span
+                  style={{
+                    fontFamily: "'Brush Script MT', 'Segoe Script', cursive",
+                    fontSize: "1.5rem",
+                    color: "#1B2B50",
+                  }}
+                >
+                  {typedName}
+                </span>
+              </div>
+            )}
+            <Button
+              type="button"
+              size="sm"
+              disabled={!typedName.trim()}
+              className="text-xs bg-[#1B2B50] hover:bg-[#1B2B50]/90 text-white gap-1"
+              onClick={saveTyped}
+            >
+              <Check className="w-3 h-3" />
+              Save Signature
+            </Button>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// Edit mode for a report
+function EditReportPanel({
+  report,
+  onSave,
+  onCancel,
+}: {
+  report: StudentReport;
+  onSave: (updated: StudentReport) => void;
+  onCancel: () => void;
+}) {
+  const [termLabel, setTermLabel] = useState(report.termLabel);
+  const [entries, setEntries] = useState(report.entries.map((e) => ({ ...e })));
+  const [overallSummary, setOverallSummary] = useState(report.overallSummary);
+
+  function handleSave() {
+    onSave({
+      ...report,
+      termLabel: termLabel.trim() || report.termLabel,
+      entries,
+      overallSummary,
+      editedAt: Date.now(),
+    });
+  }
+
+  return (
+    <div className="space-y-4 border border-blue-200 bg-blue-50/30 rounded-xl p-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-bold text-foreground flex items-center gap-1.5">
+          <Edit3 className="w-4 h-4 text-blue-600" />
+          Edit Report
+        </p>
+        <Button size="sm" variant="ghost" onClick={onCancel} className="h-7">
+          Cancel
+        </Button>
+      </div>
+
+      <div>
+        <Label className="text-xs font-semibold mb-1.5 block">Term Label</Label>
+        <Input
+          value={termLabel}
+          onChange={(e) => setTermLabel(e.target.value)}
+          className="h-8 text-sm"
+        />
+      </div>
+
+      {entries.length > 0 && (
+        <div>
+          <Label className="text-xs font-semibold mb-1.5 block">
+            Subject Comments
+          </Label>
+          <div className="space-y-2">
+            {entries.map((entry, idx) => (
+              <div
+                key={entry.subject}
+                className="bg-white rounded-lg border border-border/60 p-3"
+              >
+                <p className="text-xs font-bold text-[#1B2B50] mb-1">
+                  {entry.subject}{" "}
+                  <span className="text-[#2BA870] font-semibold">
+                    ({entry.grade})
+                  </span>
+                </p>
+                <Textarea
+                  value={entry.aiComment}
+                  onChange={(e) => {
+                    const updated = entries.map((en, i) =>
+                      i === idx ? { ...en, aiComment: e.target.value } : en,
+                    );
+                    setEntries(updated);
+                  }}
+                  className="text-xs min-h-[60px] resize-none"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <Label className="text-xs font-semibold mb-1.5 block">
+          Overall Summary
+        </Label>
+        <Textarea
+          value={overallSummary}
+          onChange={(e) => setOverallSummary(e.target.value)}
+          className="text-xs min-h-[80px] resize-none"
+        />
+      </div>
+
+      <Button
+        size="sm"
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
+        onClick={handleSave}
+      >
+        <Check className="w-3.5 h-3.5" />
+        Save Changes
+      </Button>
+    </div>
+  );
+}
+
 export function StudentReportAI({ teacherName, onClose }: Props) {
   const allStudents = getStudentUsers();
   const [selectedUsername, setSelectedUsername] = useState("");
@@ -300,8 +637,15 @@ export function StudentReportAI({ teacherName, onClose }: Props) {
     null,
   );
   const [viewReportId, setViewReportId] = useState<string | null>(null);
+  const [editingReportId, setEditingReportId] = useState<string | null>(null);
+  const [showSignatureFor, setShowSignatureFor] = useState<string | null>(null);
+  const [pastReports, setPastReports] = useState<StudentReport[]>(() =>
+    getReportsByTeacher(teacherName),
+  );
 
-  const pastReports = getReportsByTeacher(teacherName);
+  function refreshReports() {
+    setPastReports(getReportsByTeacher(teacherName));
+  }
 
   const selectedStudent = allStudents.find(
     (s) => s.username.toLowerCase() === selectedUsername.toLowerCase(),
@@ -352,28 +696,64 @@ export function StudentReportAI({ teacherName, onClose }: Props) {
       saveStudentReport(report);
       setCurrentReport(report);
       setGenerating(false);
+      refreshReports();
       toast.success(`Report generated for ${student.name}!`);
     }, 1200);
   }
 
-  function handlePrint() {
-    window.print();
+  function handleEditSave(updated: StudentReport) {
+    updateStudentReport(updated);
+    refreshReports();
+    setEditingReportId(null);
+    // if editing current report, update it
+    if (currentReport && currentReport.id === updated.id) {
+      setCurrentReport(updated);
+    }
+    toast.success("Report updated.");
   }
 
-  const viewingReport = viewReportId
-    ? (pastReports.find((r) => r.id === viewReportId) ?? null)
+  function handleSignatureSave(reportId: string, sig: string) {
+    const all = getReportsByTeacher(teacherName);
+    const report = all.find((r) => r.id === reportId);
+    if (!report) return;
+    const updated = { ...report, teacherSignature: sig, editedAt: Date.now() };
+    updateStudentReport(updated);
+    refreshReports();
+    setShowSignatureFor(null);
+    if (currentReport && currentReport.id === reportId) {
+      setCurrentReport(updated);
+    }
+    toast.success("Signature saved.");
+  }
+
+  function handleSendReport(report: StudentReport) {
+    const updated = { ...report, sent: true, sentAt: Date.now() };
+    updateStudentReport(updated);
+    refreshReports();
+    if (currentReport && currentReport.id === report.id) {
+      setCurrentReport(updated);
+    }
+    toast.success(`Report sent to ${report.studentName}!`);
+  }
+
+  // Get latest version from pastReports or currentReport
+  function getLatestReport(id: string): StudentReport | null {
+    return pastReports.find((r) => r.id === id) ?? null;
+  }
+
+  const viewingReport = viewReportId ? getLatestReport(viewReportId) : null;
+  const editingReport = editingReportId
+    ? (getLatestReport(editingReportId) ??
+      (currentReport?.id === editingReportId ? currentReport : null))
+    : null;
+
+  // Active display report (for current report section)
+  const displayCurrentReport = currentReport
+    ? (pastReports.find((r) => r.id === currentReport.id) ?? currentReport)
     : null;
 
   return (
     <>
-      <style>{`
-        @media print {
-          body > *:not(#print-overlay) { display: none !important; }
-          #print-overlay { display: block !important; position: static !important; }
-          #printable-report { box-shadow: none !important; }
-        }
-      `}</style>
-
       <div className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center p-4 overflow-y-auto">
         <div className="bg-background rounded-2xl shadow-2xl w-full max-w-2xl my-4">
           {/* Header */}
@@ -387,7 +767,7 @@ export function StudentReportAI({ teacherName, onClose }: Props) {
                   Student Reports AI
                 </h2>
                 <p className="text-xs text-muted-foreground">
-                  Generate printable grade reports
+                  Generate and manage student grade reports
                 </p>
               </div>
             </div>
@@ -485,23 +865,111 @@ export function StudentReportAI({ teacherName, onClose }: Props) {
             </Card>
 
             {/* Generated report preview */}
-            {currentReport && (
+            {displayCurrentReport && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-foreground">
                     Report Preview
                   </p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handlePrint}
-                    className="gap-1.5 text-xs"
-                  >
-                    <Printer className="w-3.5 h-3.5" />
-                    Print Report
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {/* Send button */}
+                    {displayCurrentReport.sent ? (
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#2BA870] bg-green-50 border border-green-200 rounded-full px-3 py-1">
+                        <Check className="w-3 h-3" />
+                        Sent ✓
+                        {displayCurrentReport.sentAt && (
+                          <span className="text-muted-foreground font-normal ml-1">
+                            {new Date(
+                              displayCurrentReport.sentAt,
+                            ).toLocaleDateString()}
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        data-ocid="report.send_button"
+                        className="gap-1.5 text-xs bg-[#2BA870] hover:bg-[#2BA870]/90 text-white"
+                        onClick={() => handleSendReport(displayCurrentReport)}
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        Send to Student
+                      </Button>
+                    )}
+                    {/* Edit button */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      data-ocid="report.edit_button"
+                      className="gap-1.5 text-xs"
+                      onClick={() =>
+                        setEditingReportId(displayCurrentReport.id)
+                      }
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      Edit
+                    </Button>
+                  </div>
                 </div>
-                <PrintableReport report={currentReport} />
+
+                {/* Edit panel for current report */}
+                {editingReportId === displayCurrentReport.id &&
+                  editingReport && (
+                    <EditReportPanel
+                      report={editingReport}
+                      onSave={handleEditSave}
+                      onCancel={() => setEditingReportId(null)}
+                    />
+                  )}
+
+                <PrintableReport report={displayCurrentReport} />
+
+                {/* Signature section */}
+                <div className="border border-border/60 rounded-xl p-4 bg-card space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                      <PenTool className="w-4 h-4 text-muted-foreground" />
+                      Teacher Signature
+                    </p>
+                    {displayCurrentReport.teacherSignature && (
+                      <span className="text-xs text-[#2BA870] font-semibold">
+                        ✓ Signed
+                      </span>
+                    )}
+                  </div>
+                  {showSignatureFor === displayCurrentReport.id ? (
+                    <SignaturePad
+                      existing={displayCurrentReport.teacherSignature}
+                      onSave={(sig) =>
+                        handleSignatureSave(displayCurrentReport.id, sig)
+                      }
+                    />
+                  ) : (
+                    <>
+                      {displayCurrentReport.teacherSignature && (
+                        <div className="bg-white rounded-lg border border-border/40 px-4 py-3">
+                          <SignatureDisplay
+                            sig={displayCurrentReport.teacherSignature}
+                          />
+                        </div>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        data-ocid="report.signature_button"
+                        className="gap-1.5 text-xs"
+                        onClick={() =>
+                          setShowSignatureFor(displayCurrentReport.id)
+                        }
+                      >
+                        <PenTool className="w-3.5 h-3.5" />
+                        {displayCurrentReport.teacherSignature
+                          ? "Update Signature"
+                          : "Add Signature"}
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             )}
 
@@ -529,15 +997,27 @@ export function StudentReportAI({ teacherName, onClose }: Props) {
                             {new Date(r.generatedAt).toLocaleDateString()}
                           </p>
                         </div>
+                        {/* Sent/Draft badge */}
+                        {r.sent ? (
+                          <span className="text-[10px] font-semibold text-[#2BA870] bg-green-50 border border-green-200 rounded-full px-2 py-0.5">
+                            Sent
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-semibold text-muted-foreground bg-muted border border-border/60 rounded-full px-2 py-0.5">
+                            Draft
+                          </span>
+                        )}
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-6 text-xs gap-1"
-                        onClick={() => setViewReportId(r.id)}
-                      >
-                        View
-                      </Button>
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 text-xs gap-1"
+                          onClick={() => setViewReportId(r.id)}
+                        >
+                          View
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -550,7 +1030,13 @@ export function StudentReportAI({ teacherName, onClose }: Props) {
       {/* View past report dialog */}
       <Dialog
         open={viewReportId !== null}
-        onOpenChange={(o) => !o && setViewReportId(null)}
+        onOpenChange={(o) => {
+          if (!o) {
+            setViewReportId(null);
+            setEditingReportId(null);
+            setShowSignatureFor(null);
+          }
+        }}
       >
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -558,16 +1044,103 @@ export function StudentReportAI({ teacherName, onClose }: Props) {
           </DialogHeader>
           {viewingReport && (
             <div className="space-y-3">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handlePrint}
-                className="gap-1.5 text-xs"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                Print Report
-              </Button>
+              {/* Edit / Send buttons for past report */}
+              <div className="flex items-center gap-2">
+                {viewingReport.sent ? (
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#2BA870] bg-green-50 border border-green-200 rounded-full px-3 py-1">
+                    <Check className="w-3 h-3" />
+                    Sent ✓
+                    {viewingReport.sentAt && (
+                      <span className="text-muted-foreground font-normal ml-1">
+                        {new Date(viewingReport.sentAt).toLocaleDateString()}
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  <Button
+                    size="sm"
+                    data-ocid="report.dialog.send_button"
+                    className="gap-1.5 text-xs bg-[#2BA870] hover:bg-[#2BA870]/90 text-white"
+                    onClick={() => {
+                      handleSendReport(viewingReport);
+                      setViewReportId(null);
+                    }}
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    Send to Student
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  data-ocid="report.dialog.edit_button"
+                  className="gap-1.5 text-xs"
+                  onClick={() => setEditingReportId(viewingReport.id)}
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  Edit Report
+                </Button>
+              </div>
+
+              {/* Edit panel in dialog */}
+              {editingReportId === viewingReport.id && editingReport && (
+                <EditReportPanel
+                  report={editingReport}
+                  onSave={(updated) => {
+                    handleEditSave(updated);
+                    setViewReportId(updated.id);
+                  }}
+                  onCancel={() => setEditingReportId(null)}
+                />
+              )}
+
               <PrintableReport report={viewingReport} />
+
+              {/* Signature section in dialog */}
+              <div className="border border-border/60 rounded-xl p-4 bg-card space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                    <PenTool className="w-4 h-4 text-muted-foreground" />
+                    Teacher Signature
+                  </p>
+                  {viewingReport.teacherSignature && (
+                    <span className="text-xs text-[#2BA870] font-semibold">
+                      ✓ Signed
+                    </span>
+                  )}
+                </div>
+                {showSignatureFor === viewingReport.id ? (
+                  <SignaturePad
+                    existing={viewingReport.teacherSignature}
+                    onSave={(sig) => {
+                      handleSignatureSave(viewingReport.id, sig);
+                      setViewReportId(viewingReport.id);
+                    }}
+                  />
+                ) : (
+                  <>
+                    {viewingReport.teacherSignature && (
+                      <div className="bg-white rounded-lg border border-border/40 px-4 py-3">
+                        <SignatureDisplay
+                          sig={viewingReport.teacherSignature}
+                        />
+                      </div>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      data-ocid="report.dialog.signature_button"
+                      className="gap-1.5 text-xs"
+                      onClick={() => setShowSignatureFor(viewingReport.id)}
+                    >
+                      <PenTool className="w-3.5 h-3.5" />
+                      {viewingReport.teacherSignature
+                        ? "Update Signature"
+                        : "Add Signature"}
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           )}
         </DialogContent>

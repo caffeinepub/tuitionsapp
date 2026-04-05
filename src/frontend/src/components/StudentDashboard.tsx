@@ -20,6 +20,7 @@ import {
   ChevronUp,
   ClipboardCheck,
   ClipboardList,
+  FileText,
   Flag,
   GraduationCap,
   KeyRound,
@@ -61,6 +62,8 @@ import {
   getAttemptsUsed,
 } from "../utils/quizStorage";
 import { addReview, getReviews } from "../utils/reviewStorage";
+import { getReportsForStudent } from "../utils/studentReportStorage";
+import type { StudentReport } from "../utils/studentReportStorage";
 import {
   getOrCreateVerificationCode,
   getStudentAge,
@@ -120,6 +123,8 @@ export function StudentDashboard({ student, onLogout }: Props) {
   }, [student.username, student.name, verificationCode]);
 
   const [reportOpen, setReportOpen] = useState(false);
+  const [viewingStudentReport, setViewingStudentReport] =
+    useState<StudentReport | null>(null);
 
   // Student review (16+)
   const studentAge = getStudentAge(student.username);
@@ -1103,6 +1108,231 @@ export function StudentDashboard({ student, onLogout }: Props) {
             </div>
           )}
         </section>
+
+        {/* My Reports */}
+        {(() => {
+          const myReports = getReportsForStudent(student.username).filter(
+            (r) => r.sent === true,
+          );
+          return (
+            <section className="mb-8" data-ocid="student.my_reports.section">
+              <h2 className="font-display text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-student" />
+                My Reports
+              </h2>
+              {myReports.length === 0 ? (
+                <div
+                  data-ocid="student.my_reports.empty_state"
+                  className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
+                >
+                  <FileText className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+                  <p className="text-sm font-medium text-muted-foreground">
+                    No reports have been sent yet.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Your teacher will send your grade report here when it's
+                    ready.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {myReports.map((report, idx) => (
+                    <div
+                      key={report.id}
+                      data-ocid={`student.my_reports.item.${idx + 1}`}
+                      className="bg-card border border-border/60 rounded-xl px-4 py-3 flex items-center justify-between shadow-xs"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                          <FileText className="w-4 h-4 text-purple-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">
+                            {report.termLabel}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            By {report.teacherName} ·{" "}
+                            {report.sentAt
+                              ? new Date(report.sentAt).toLocaleDateString()
+                              : new Date(
+                                  report.generatedAt,
+                                ).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        data-ocid={`student.my_reports.button.${idx + 1}`}
+                        variant="outline"
+                        className="h-7 text-xs gap-1"
+                        onClick={() => setViewingStudentReport(report)}
+                      >
+                        View
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          );
+        })()}
+
+        {/* My Report Detail Dialog */}
+        <Dialog
+          open={viewingStudentReport !== null}
+          onOpenChange={(o) => !o && setViewingStudentReport(null)}
+        >
+          <DialogContent
+            data-ocid="student.my_report.dialog"
+            className="sm:max-w-2xl max-h-[90vh] overflow-y-auto"
+          >
+            <DialogHeader>
+              <DialogTitle className="font-display flex items-center gap-2">
+                <GraduationCap className="w-5 h-5 text-student" />
+                Student Report
+              </DialogTitle>
+            </DialogHeader>
+            {viewingStudentReport && (
+              <div className="space-y-4">
+                {/* Header info */}
+                <div className="bg-muted/40 rounded-lg p-4 grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
+                      Student
+                    </p>
+                    <p className="text-sm font-bold text-foreground">
+                      {viewingStudentReport.studentName}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      @{viewingStudentReport.studentUsername}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
+                      Teacher
+                    </p>
+                    <p className="text-sm font-bold text-foreground">
+                      {viewingStudentReport.teacherName}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
+                      Term
+                    </p>
+                    <p className="text-sm font-semibold text-foreground">
+                      {viewingStudentReport.termLabel}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-semibold">
+                      Sent
+                    </p>
+                    <p className="text-sm text-foreground">
+                      {viewingStudentReport.sentAt
+                        ? new Date(
+                            viewingStudentReport.sentAt,
+                          ).toLocaleDateString()
+                        : "-"}
+                    </p>
+                  </div>
+                </div>
+                {/* Grades table */}
+                {viewingStudentReport.entries.length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold text-foreground uppercase tracking-wide mb-2">
+                      Subject Results
+                    </p>
+                    <div className="rounded-lg border border-border/60 overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead className="bg-[#1B2B50] text-white">
+                          <tr>
+                            <th className="text-left px-3 py-2 text-xs font-semibold uppercase">
+                              Subject
+                            </th>
+                            <th className="text-center px-3 py-2 text-xs font-semibold uppercase">
+                              Grade
+                            </th>
+                            <th className="text-left px-3 py-2 text-xs font-semibold uppercase">
+                              Comment
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {viewingStudentReport.entries.map((entry, i) => (
+                            <tr
+                              key={entry.subject}
+                              className={
+                                i % 2 === 0 ? "bg-white" : "bg-muted/20"
+                              }
+                            >
+                              <td className="px-3 py-2.5 font-medium text-foreground">
+                                {entry.subject}
+                              </td>
+                              <td className="px-3 py-2.5 text-center">
+                                <span className="inline-block px-2 py-0.5 rounded-full bg-[#2BA870] text-white text-xs font-bold">
+                                  {entry.grade}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2.5 text-muted-foreground text-xs leading-relaxed">
+                                {entry.aiComment}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+                {/* Overall summary */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-xs font-bold text-[#1B2B50] uppercase tracking-wide mb-1">
+                    Overall Summary
+                  </p>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {viewingStudentReport.overallSummary}
+                  </p>
+                </div>
+                {/* Teacher signature */}
+                {viewingStudentReport.teacherSignature && (
+                  <div className="border border-border/60 rounded-xl p-4 bg-card">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                      Teacher Signature
+                    </p>
+                    {viewingStudentReport.teacherSignature.startsWith(
+                      "typed:",
+                    ) ? (
+                      <span
+                        style={{
+                          fontFamily:
+                            "'Brush Script MT', 'Segoe Script', cursive",
+                          fontSize: "1.5rem",
+                          color: "#1B2B50",
+                        }}
+                      >
+                        {viewingStudentReport.teacherSignature.slice(6)}
+                      </span>
+                    ) : (
+                      <img
+                        src={viewingStudentReport.teacherSignature}
+                        alt="Teacher signature"
+                        className="max-h-12 max-w-[200px] object-contain"
+                      />
+                    )}
+                  </div>
+                )}
+                <div className="flex justify-end">
+                  <Button
+                    data-ocid="student.my_report.close_button"
+                    variant="outline"
+                    onClick={() => setViewingStudentReport(null)}
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Learning Games */}
         <section className="mb-8">

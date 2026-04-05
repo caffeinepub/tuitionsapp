@@ -123,6 +123,59 @@
   }
 }
 
+@keyframes animate-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.28;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes underline-grow {
+  from {
+    width: 0;
+    opacity: 0;
+  }
+  to {
+    width: 100%;
+    opacity: 1;
+  }
+}
+
 /* Display / Logo — Fredoka One */
 .font-display {
   font-family: "Fredoka One", cursive;
@@ -162,9 +215,74 @@
 
 /* Card hover lift */
 .card-lift {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow
+    0.25s ease;
 }
 .card-lift:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 32px -8px oklch(0.28 0.085 258 / 0.2);
+  transform: translateY(-5px);
+  box-shadow: 0 20px 48px -12px oklch(0.28 0.085 258 / 0.22);
+}
+
+/* Glass card utility */
+.glass-card {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+/* Shimmer text effect */
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    oklch(0.28 0.085 258) 0%,
+    oklch(0.45 0.22 264) 30%,
+    oklch(0.62 0.175 24) 50%,
+    oklch(0.45 0.22 264) 70%,
+    oklch(0.28 0.085 258) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+
+/* Hero glow blob */
+.hero-glow {
+  animation: glow-pulse 4s ease-in-out infinite;
+}
+
+/* Floating animation */
+.float-anim {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Role card hover badge */
+.role-card-hover-badge {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.card-lift:hover .role-card-hover-badge {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Trust bar icon glow */
+.trust-icon {
+  filter: drop-shadow(0 2px 6px rgba(27, 43, 80, 0.18));
+}
+
+/* Print styles — only show printable report */
+@media print {
+  body > *:not(#print-overlay) {
+    display: none !important;
+  }
+  #print-overlay {
+    display: block !important;
+    position: static !important;
+  }
+  #printable-report {
+    box-shadow: none !important;
+  }
 }

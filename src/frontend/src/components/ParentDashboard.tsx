@@ -23,6 +23,7 @@ import {
   Headphones,
   MessageSquare,
   PlusCircle,
+  Printer,
   Send,
   Star,
   User,
@@ -788,7 +789,9 @@ export function ParentDashboard({
         {/* Student Reports */}
         {linkedStudentUsername &&
           (() => {
-            const studentReports = getReportsForStudent(linkedStudentUsername);
+            const studentReports = getReportsForStudent(
+              linkedStudentUsername,
+            ).filter((r) => r.sent === true);
             const viewingReport = viewingReportId
               ? (studentReports.find((r) => r.id === viewingReportId) ?? null)
               : null;
@@ -868,6 +871,18 @@ export function ParentDashboard({
                     </DialogHeader>
                     {viewingReport && (
                       <div className="space-y-4">
+                        {/* Print button - parent only */}
+                        <div className="flex justify-end print:hidden">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => window.print()}
+                            data-ocid="parent.student_report.print_button"
+                            className="gap-1.5 text-xs print:hidden"
+                          >
+                            <Printer className="w-3.5 h-3.5" /> Print Report
+                          </Button>
+                        </div>
                         {/* Header info */}
                         <div className="bg-muted/40 rounded-lg p-4 grid grid-cols-2 gap-3">
                           <div>
@@ -966,6 +981,35 @@ export function ParentDashboard({
                             {viewingReport.overallSummary}
                           </p>
                         </div>
+
+                        {/* Teacher signature */}
+                        {viewingReport.teacherSignature && (
+                          <div className="border border-border/60 rounded-xl p-4 bg-card">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                              Teacher Signature
+                            </p>
+                            {viewingReport.teacherSignature.startsWith(
+                              "typed:",
+                            ) ? (
+                              <span
+                                style={{
+                                  fontFamily:
+                                    "'Brush Script MT', 'Segoe Script', cursive",
+                                  fontSize: "1.5rem",
+                                  color: "#1B2B50",
+                                }}
+                              >
+                                {viewingReport.teacherSignature.slice(6)}
+                              </span>
+                            ) : (
+                              <img
+                                src={viewingReport.teacherSignature}
+                                alt="Teacher signature"
+                                className="max-h-12 max-w-[200px] object-contain"
+                              />
+                            )}
+                          </div>
+                        )}
 
                         <div className="flex justify-end">
                           <Button
