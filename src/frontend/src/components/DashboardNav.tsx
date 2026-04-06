@@ -1,12 +1,15 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, Palette } from "lucide-react";
+import type React from "react";
 
 type Props = {
   userRole: "Student" | "Teacher" | "Parent";
   userName?: string;
   onLogout: () => void;
   headerClass: string;
+  onCustomizeColor?: () => void;
+  headerStyle?: React.CSSProperties;
 };
 
 const roleBadgeClass = {
@@ -64,9 +67,11 @@ export function DashboardNav({
   userName,
   onLogout,
   headerClass,
+  onCustomizeColor,
+  headerStyle,
 }: Props) {
   return (
-    <header className={`${headerClass} px-4 sm:px-6 py-4`}>
+    <header className={`${headerClass} px-4 sm:px-6 py-4`} style={headerStyle}>
       <div className="max-w-6xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
@@ -88,6 +93,18 @@ export function DashboardNav({
             <span className="hidden sm:block text-sm text-white/80 font-medium">
               {userName}
             </span>
+          )}
+          {onCustomizeColor && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onCustomizeColor}
+              title="Customise colours"
+              data-ocid="nav.customize_color.button"
+              className="text-white/80 hover:text-white hover:bg-white/20"
+            >
+              <Palette className="w-4 h-4" />
+            </Button>
           )}
           <Button
             data-ocid="nav.logout.button"

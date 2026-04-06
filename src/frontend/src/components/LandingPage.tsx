@@ -13,7 +13,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AppView } from "../App";
 import { type Review, getReviews } from "../utils/reviewStorage";
 
@@ -166,6 +166,42 @@ export function LandingPage({ onNavigate }: Props) {
   const [showAdmin, setShowAdmin] = useState(false);
   const logoClickTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [liveStudentCount, setLiveStudentCount] = useState<number>(0);
+  const [liveTeacherCount, setLiveTeacherCount] = useState<number>(0);
+  const [liveSubjectCount, setLiveSubjectCount] = useState<number>(0);
+
+  useEffect(() => {
+    // Student count from studentStorage
+    try {
+      const raw = localStorage.getItem("tuitions_students");
+      const students: unknown[] = raw ? JSON.parse(raw) : [];
+      setLiveStudentCount(Array.isArray(students) ? students.length : 0);
+    } catch {
+      setLiveStudentCount(0);
+    }
+
+    // Teacher count from teacher name map
+    try {
+      const raw = localStorage.getItem("tuitions_teacher_name_map");
+      const map: Record<string, string> = raw ? JSON.parse(raw) : {};
+      setLiveTeacherCount(Object.keys(map).length);
+    } catch {
+      setLiveTeacherCount(0);
+    }
+
+    // Subject count from unique subjects in classes
+    try {
+      const raw = localStorage.getItem("tuitions_teacher_classes");
+      const classes: Array<{ subject?: string }> = raw ? JSON.parse(raw) : [];
+      const subjects = new Set(
+        classes.map((c) => c.subject?.toLowerCase().trim()).filter(Boolean),
+      );
+      setLiveSubjectCount(subjects.size);
+    } catch {
+      setLiveSubjectCount(0);
+    }
+  }, []);
+
   function handleLogoClick() {
     const nextCount = logoClickCount + 1;
     if (nextCount >= 5) {
@@ -298,19 +334,19 @@ export function LandingPage({ onNavigate }: Props) {
               {[
                 {
                   icon: GraduationCap,
-                  value: "500+",
+                  value: liveStudentCount > 0 ? `${liveStudentCount}` : "0",
                   label: "Students",
                   color: "#1B2B50",
                 },
                 {
                   icon: BookOpen,
-                  value: "100+",
+                  value: liveTeacherCount > 0 ? `${liveTeacherCount}` : "0",
                   label: "Teachers",
                   color: "#2BA870",
                 },
                 {
                   icon: Brain,
-                  value: "50+",
+                  value: liveSubjectCount > 0 ? `${liveSubjectCount}` : "0",
                   label: "Subjects",
                   color: "#E8614A",
                 },

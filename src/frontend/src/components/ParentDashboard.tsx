@@ -40,6 +40,7 @@ import {
   getUnreadCount,
   markChatRead,
 } from "../utils/assignmentStorage";
+import { useDashboardColor } from "../utils/dashboardColorStorage";
 import { addReview } from "../utils/reviewStorage";
 import {
   type StudentReport,
@@ -58,6 +59,7 @@ import {
 } from "../utils/teacherProfileStorage";
 import { getAllTermSchedules_public } from "../utils/termStorage";
 import { ChatWindow } from "./ChatWindow";
+import { DashboardColorPicker } from "./DashboardColorPicker";
 import { DashboardNav } from "./DashboardNav";
 import { ReportUser } from "./ReportUser";
 import { SupportPortal } from "./SupportPortal";
@@ -87,9 +89,97 @@ export function ParentDashboard({
     "";
 
   const [supportOpen, setSupportOpen] = useState(false);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [parentGradient, setParentGradient] = useDashboardColor("parent");
   const [reportOpen, setReportOpen] = useState(false);
   const [switchDropdownOpen, setSwitchDropdownOpen] = useState(false);
   const [viewingReportId, setViewingReportId] = useState<string | null>(null);
+
+  function printReport(report: StudentReport) {
+    const printWin = window.open("", "_blank");
+    if (!printWin) return;
+
+    const signatureHtml = report.teacherSignature
+      ? report.teacherSignature.startsWith("typed:")
+        ? `<div style="font-family: 'Brush Script MT', cursive; font-size: 22px; color: #1B2B50; margin-top: 4px;">${report.teacherSignature.slice(6)}</div>`
+        : `<img src="${report.teacherSignature}" alt="Signature" style="max-height: 60px; max-width: 200px; margin-top: 4px;" />`
+      : '<em style="color:#8B929F">No signature provided</em>';
+
+    const entriesHtml = report.entries
+      .map(
+        (e) => `<tr>
+          <td style="padding: 8px 12px; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #1B2B50;">${e.subject}</td>
+          <td style="padding: 8px 12px; border-bottom: 1px solid #e5e7eb; text-align: center; font-weight: 700; color: #2BA870;">${e.grade}</td>
+          <td style="padding: 8px 12px; border-bottom: 1px solid #e5e7eb; color: #374151;">${e.aiComment}</td>
+        </tr>`,
+      )
+      .join("");
+
+    const genDate = new Date(report.generatedAt).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+    printWin.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Student Report — ${report.studentName}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Nunito', 'Segoe UI', Arial, sans-serif; color: #1f2937; background: #fff; padding: 32px; }
+    .header { display: flex; align-items: center; gap: 12px; border-bottom: 3px solid #1B2B50; padding-bottom: 16px; margin-bottom: 24px; }
+    .logo-text { font-size: 22px; font-weight: 800; color: #1B2B50; }
+    .logo-sub { font-size: 12px; color: #8B929F; margin-left: 4px; }
+    .report-title { font-size: 20px; font-weight: 700; color: #1B2B50; margin-bottom: 16px; }
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; background: #f9fafb; border-radius: 8px; padding: 16px; }
+    .meta-item label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #8B929F; font-weight: 700; display: block; margin-bottom: 2px; }
+    .meta-item span { font-size: 14px; font-weight: 600; color: #1B2B50; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    thead th { background: #1B2B50; color: #fff; padding: 10px 12px; text-align: left; font-size: 13px; font-weight: 700; }
+    tbody tr:nth-child(even) { background: #f9fafb; }
+    .summary { background: #f0f9f4; border-left: 4px solid #2BA870; border-radius: 6px; padding: 14px 16px; margin-bottom: 24px; }
+    .summary-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #2BA870; font-weight: 700; margin-bottom: 6px; }
+    .summary-text { font-size: 14px; color: #1f2937; line-height: 1.6; }
+    .signature-section { border-top: 1px solid #e5e7eb; padding-top: 16px; }
+    .signature-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #8B929F; font-weight: 700; margin-bottom: 6px; }
+    .footer { margin-top: 32px; text-align: center; font-size: 11px; color: #8B929F; border-top: 1px solid #e5e7eb; padding-top: 12px; }
+    @media print { body { padding: 20px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <span class="logo-text">🎓 Tuition Skill</span>
+      <span class="logo-sub">Official Student Report</span>
+    </div>
+  </div>
+  <p class="report-title">Academic Progress Report — ${report.termLabel}</p>
+  <div class="meta-grid">
+    <div class="meta-item"><label>Student</label><span>${report.studentName} (@${report.studentUsername})</span></div>
+    <div class="meta-item"><label>Teacher</label><span>${report.teacherName}</span></div>
+    <div class="meta-item"><label>Term</label><span>${report.termLabel}</span></div>
+    <div class="meta-item"><label>Generated</label><span>${genDate}</span></div>
+  </div>
+  <table>
+    <thead><tr><th>Subject</th><th style="text-align:center;width:80px;">Grade</th><th>Comment</th></tr></thead>
+    <tbody>${entriesHtml}</tbody>
+  </table>
+  <div class="summary">
+    <div class="summary-label">Overall Summary</div>
+    <div class="summary-text">${report.overallSummary}</div>
+  </div>
+  <div class="signature-section">
+    <div class="signature-label">Teacher Signature</div>
+    ${signatureHtml}
+  </div>
+  <div class="footer">Generated by Tuition Skill · This report is confidential and intended for the named student and parent only.</div>
+</body>
+</html>`);
+    printWin.document.close();
+    printWin.print();
+  }
 
   // Parent ban check
   useEffect(() => {
@@ -255,14 +345,31 @@ export function ParentDashboard({
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <DashboardColorPicker
+        dashboardRole="parent"
+        current={parentGradient}
+        onApply={(g) => {
+          setParentGradient(g);
+          setColorPickerOpen(false);
+        }}
+        open={colorPickerOpen}
+        onClose={() => setColorPickerOpen(false)}
+      />
       <DashboardNav
         userRole="Parent"
         onLogout={onLogout}
         headerClass="dashboard-header-parent"
+        headerStyle={
+          parentGradient ? { background: parentGradient } : undefined
+        }
+        onCustomizeColor={() => setColorPickerOpen(true)}
       />
 
       {/* Header action row: student name + switch + support + report */}
-      <div className="dashboard-header-parent px-4 sm:px-6 pt-2 pb-0">
+      <div
+        className="dashboard-header-parent px-4 sm:px-6 pt-2 pb-0"
+        style={parentGradient ? { background: parentGradient } : undefined}
+      >
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
           {/* Student name + Switch Student dropdown */}
           <div className="flex items-center gap-2">
@@ -357,7 +464,10 @@ export function ParentDashboard({
       </div>
 
       {/* Welcome banner */}
-      <div className="dashboard-header-parent px-4 sm:px-6 pb-8">
+      <div
+        className="dashboard-header-parent px-4 sm:px-6 pb-8"
+        style={parentGradient ? { background: parentGradient } : undefined}
+      >
         <div className="max-w-6xl mx-auto">
           <h1 className="font-display text-3xl font-bold text-white mb-1">
             Welcome back! 👋
@@ -876,7 +986,9 @@ export function ParentDashboard({
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => window.print()}
+                            onClick={() =>
+                              viewingReport && printReport(viewingReport)
+                            }
                             data-ocid="parent.student_report.print_button"
                             className="gap-1.5 text-xs print:hidden"
                           >

@@ -26,6 +26,7 @@ import {
   Headphones,
   LogOut,
   MessageSquare,
+  Palette,
   Phone,
   RefreshCw,
   Send,
@@ -49,6 +50,7 @@ import {
   getCallBookings,
   getGrades,
 } from "../utils/assignmentStorage";
+import { useDashboardColor } from "../utils/dashboardColorStorage";
 import {
   type ParentProfile,
   deleteParentProfile,
@@ -96,6 +98,7 @@ import {
   warnStudent,
   warnTeacher,
 } from "../utils/supportStorage";
+import { DashboardColorPicker } from "./DashboardColorPicker";
 
 function getAllChatMessages(): ChatMessage[] {
   try {
@@ -112,6 +115,8 @@ type Props = {
 };
 
 export function AdminDashboard({ onLogout }: Props) {
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [adminGradient, setAdminGradient] = useDashboardColor("admin");
   const [students, setStudents] = useState<StoredStudent[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [bookings, setBookings] = useState<CallBooking[]>([]);
@@ -303,31 +308,68 @@ export function AdminDashboard({ onLogout }: Props) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <DashboardColorPicker
+        dashboardRole="admin"
+        current={adminGradient}
+        onApply={(g) => {
+          setAdminGradient(g);
+          setColorPickerOpen(false);
+        }}
+        open={colorPickerOpen}
+        onClose={() => setColorPickerOpen(false)}
+      />
       {/* Header */}
-      <header className="bg-card border-b border-border px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+      <header
+        className="bg-card border-b border-border px-6 py-4 flex items-center justify-between sticky top-0 z-10"
+        style={adminGradient ? { background: adminGradient } : undefined}
+      >
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-sm">
             <ShieldCheck className="w-5 h-5 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="font-display text-xl font-bold text-foreground">
+            <h1
+              className={`font-display text-xl font-bold ${adminGradient ? "text-white" : "text-foreground"}`}
+            >
               Admin Panel
             </h1>
-            <p className="text-xs text-muted-foreground">
+            <p
+              className={`text-xs ${adminGradient ? "text-white/70" : "text-muted-foreground"}`}
+            >
               Tuition Skill Control Centre
             </p>
           </div>
         </div>
-        <Button
-          data-ocid="admin.logout.button"
-          variant="ghost"
-          size="sm"
-          onClick={onLogout}
-          className="gap-2 text-muted-foreground hover:text-destructive"
-        >
-          <LogOut className="w-4 h-4" />
-          Logout
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setColorPickerOpen(true)}
+            title="Customise colours"
+            data-ocid="admin.customize_color.button"
+            className={
+              adminGradient
+                ? "gap-2 text-white/80 hover:text-white hover:bg-white/20"
+                : "gap-2 text-muted-foreground hover:text-foreground"
+            }
+          >
+            <Palette className="w-4 h-4" />
+          </Button>
+          <Button
+            data-ocid="admin.logout.button"
+            variant="ghost"
+            size="sm"
+            onClick={onLogout}
+            className={
+              adminGradient
+                ? "gap-2 text-white/80 hover:text-white hover:bg-white/20"
+                : "gap-2 text-muted-foreground hover:text-destructive"
+            }
+          >
+            <LogOut className="w-4 h-4" />
+            Logout
+          </Button>
+        </div>
       </header>
 
       <main className="flex-1 px-4 py-6 max-w-7xl mx-auto w-full">

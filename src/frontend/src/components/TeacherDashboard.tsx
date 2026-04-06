@@ -77,6 +77,7 @@ import {
   postAnnouncement,
   removeStudentFromClass,
 } from "../utils/classStorage";
+import { useDashboardColor } from "../utils/dashboardColorStorage";
 import {
   type Quiz,
   type QuizAssignment,
@@ -110,6 +111,7 @@ import {
   updateTeacherProfilePicture,
 } from "../utils/teacherProfileStorage";
 import { ChatWindow } from "./ChatWindow";
+import { DashboardColorPicker } from "./DashboardColorPicker";
 import { DashboardNav } from "./DashboardNav";
 import { FreeTimeRobot } from "./FreeTimeRobot";
 import { QuizBuilder } from "./QuizBuilder";
@@ -250,6 +252,8 @@ export function TeacherDashboard({ onLogout }: Props) {
 
   // Support portal & report user state
   const [supportOpen, setSupportOpen] = useState(false);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [teacherGradient, setTeacherGradient] = useDashboardColor("teacher");
   const [reportOpen, setReportOpen] = useState(false);
   const [warningMsg, setWarningMsg] = useState<string | null>(null);
 
@@ -772,10 +776,24 @@ export function TeacherDashboard({ onLogout }: Props) {
         </DialogContent>
       </Dialog>
 
+      <DashboardColorPicker
+        dashboardRole="teacher"
+        current={teacherGradient}
+        onApply={(g) => {
+          setTeacherGradient(g);
+          setColorPickerOpen(false);
+        }}
+        open={colorPickerOpen}
+        onClose={() => setColorPickerOpen(false)}
+      />
       <DashboardNav
         userRole="Teacher"
         onLogout={onLogout}
         headerClass="dashboard-header-teacher"
+        headerStyle={
+          teacherGradient ? { background: teacherGradient } : undefined
+        }
+        onCustomizeColor={() => setColorPickerOpen(true)}
       />
 
       {/* Warning banner */}
@@ -788,7 +806,10 @@ export function TeacherDashboard({ onLogout }: Props) {
       )}
 
       {/* Support & Report action row */}
-      <div className="dashboard-header-teacher px-4 sm:px-6 pt-2 pb-0">
+      <div
+        className="dashboard-header-teacher px-4 sm:px-6 pt-2 pb-0"
+        style={teacherGradient ? { background: teacherGradient } : undefined}
+      >
         <div className="max-w-6xl mx-auto flex justify-end gap-2">
           <button
             type="button"
@@ -812,7 +833,10 @@ export function TeacherDashboard({ onLogout }: Props) {
       </div>
 
       {/* Welcome banner */}
-      <div className="dashboard-header-teacher px-4 sm:px-6 pb-8">
+      <div
+        className="dashboard-header-teacher px-4 sm:px-6 pb-8"
+        style={teacherGradient ? { background: teacherGradient } : undefined}
+      >
         <div className="max-w-6xl mx-auto">
           <h1 className="font-display text-3xl font-bold text-white mb-1">
             Good day

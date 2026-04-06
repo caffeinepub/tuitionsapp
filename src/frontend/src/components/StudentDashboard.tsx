@@ -55,6 +55,7 @@ import {
   getClassesForStudent,
   joinClassByCode,
 } from "../utils/classStorage";
+import { useDashboardColor } from "../utils/dashboardColorStorage";
 import {
   type Quiz,
   type QuizAssignment,
@@ -75,6 +76,7 @@ import { getWarningsForStudent } from "../utils/supportStorage";
 import { getAllTermSchedules_public } from "../utils/termStorage";
 import { AiDoubtBot } from "./AiDoubtBot";
 import { ChatWindow } from "./ChatWindow";
+import { DashboardColorPicker } from "./DashboardColorPicker";
 import { DashboardNav } from "./DashboardNav";
 import { LearningGames } from "./LearningGames";
 import { QuizTaker } from "./QuizTaker";
@@ -123,6 +125,8 @@ export function StudentDashboard({ student, onLogout }: Props) {
   }, [student.username, student.name, verificationCode]);
 
   const [reportOpen, setReportOpen] = useState(false);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [studentGradient, setStudentGradient] = useDashboardColor("student");
   const [viewingStudentReport, setViewingStudentReport] =
     useState<StudentReport | null>(null);
 
@@ -422,11 +426,25 @@ export function StudentDashboard({ student, onLogout }: Props) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <DashboardColorPicker
+        dashboardRole="student"
+        current={studentGradient}
+        onApply={(g) => {
+          setStudentGradient(g);
+          setColorPickerOpen(false);
+        }}
+        open={colorPickerOpen}
+        onClose={() => setColorPickerOpen(false)}
+      />
       <DashboardNav
         userRole="Student"
         userName={student.name}
         onLogout={onLogout}
         headerClass="dashboard-header-student"
+        headerStyle={
+          studentGradient ? { background: studentGradient } : undefined
+        }
+        onCustomizeColor={() => setColorPickerOpen(true)}
       />
 
       {/* Student warning banner */}
@@ -439,7 +457,10 @@ export function StudentDashboard({ student, onLogout }: Props) {
       )}
 
       {/* Report action */}
-      <div className="dashboard-header-student px-4 sm:px-6 pt-2 pb-0">
+      <div
+        className="dashboard-header-student px-4 sm:px-6 pt-2 pb-0"
+        style={studentGradient ? { background: studentGradient } : undefined}
+      >
         <div className="max-w-6xl mx-auto flex justify-end">
           <button
             type="button"
@@ -454,7 +475,10 @@ export function StudentDashboard({ student, onLogout }: Props) {
       </div>
 
       {/* Welcome banner */}
-      <div className="dashboard-header-student px-4 sm:px-6 pb-8">
+      <div
+        className="dashboard-header-student px-4 sm:px-6 pb-8"
+        style={studentGradient ? { background: studentGradient } : undefined}
+      >
         <div className="max-w-6xl mx-auto">
           <h1 className="font-display text-3xl font-bold text-white mb-1">
             Welcome back, {student.name.split(" ")[0]}! 👋
