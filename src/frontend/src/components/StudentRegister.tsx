@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { createActorWithConfig } from "@caffeineai/core-infrastructure";
 import { AlertCircle, GraduationCap, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { createActorWithConfig } from "../config";
+import { createActor as createBackendActor } from "../backend";
 import { saveStudentUser } from "../utils/studentStorage";
 import { AuthLayout } from "./AuthLayout";
 
@@ -48,7 +49,8 @@ export function StudentRegister({ onRegistered, onBack }: Props) {
       });
       if (result.success) {
         // Sync to backend canister (fire and forget) for cross-device access
-        createActorWithConfig()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        createActorWithConfig(createBackendActor as any)
           .then((actor: any) => {
             actor
               .registerStudent(

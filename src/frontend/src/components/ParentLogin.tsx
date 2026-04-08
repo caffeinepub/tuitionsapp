@@ -6,10 +6,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useInternetIdentity } from "@caffeineai/core-infrastructure";
 import { HelpCircle, Loader2, Shield, Users } from "lucide-react";
 import { useEffect } from "react";
 import { toast } from "sonner";
-import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { AuthLayout } from "./AuthLayout";
 
 type Props = {

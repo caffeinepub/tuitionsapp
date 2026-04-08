@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { createActorWithConfig } from "@caffeineai/core-infrastructure";
 import { KeyRound, Loader2, Search, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { createActorWithConfig } from "../config";
+import { createActor as createBackendActor } from "../backend";
 import {
   getStudentUsers,
   saveParentLink,
@@ -53,7 +54,9 @@ export function ParentLinkStudent({
 
       // Always check backend — it is the authoritative cross-device source
       try {
-        const actor = (await createActorWithConfig()) as any;
+        const actor = (await createActorWithConfig(
+          createBackendActor as any,
+        )) as any;
 
         // Check if the student exists at all
         const exists = await actor.studentExistsInBackend(lookupUsername);
@@ -107,7 +110,9 @@ export function ParentLinkStudent({
       let valid = verifyStudentCode(lookupUsername, code.trim());
       if (!valid) {
         try {
-          const actor = (await createActorWithConfig()) as any;
+          const actor = (await createActorWithConfig(
+            createBackendActor as any,
+          )) as any;
           valid = await actor.checkVerificationCode(
             lookupUsername,
             code.trim(),

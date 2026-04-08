@@ -1,0 +1,64 @@
+// Version: 1.0.0
+type Assignment__702522088 =
+  {
+    description : Text;
+    dueDate : Text;
+    id : Text;
+    subjectId : Text;
+    title : Text
+  };
+type AudioChunk__148599703 =
+  {data : [Nat8]; senderUsername : Text; sessionId : Text; timestamp : Int};
+type Data__791452850<K, V> =
+  {var count : Nat__490723111; kvs : [var ?(K, V)]};
+type Grade__103003982 =
+  {
+    assignmentId : Text;
+    feedback : Text;
+    id : Text;
+    score : Nat;
+    studentId : Text
+  };
+type Internal__8484328<K, V> =
+  {children : [var ?Node__46230540<K, V>]; data : Data__791452850<K, V>};
+type Leaf__809889148<K, V> = {data : Data__791452850<K, V>};
+type Map__158565046<K, V> = Map__297112838<K, V>;
+type Map__297112838<K, V> =
+  {var root : Node__46230540<K, V>; var size : Nat__490723111};
+type Map__605269027<K, V> = Map__158565046<K, V>;
+type Nat__490723111 = Nat__920180692;
+type Nat__920180692 = Nat;
+type Node__46230540<K, V> =
+  {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
+type StudentProfile__144515968 =
+  {id : Text; name : Text; passwordHash : Text; username : Text};
+type Subject__697234594 =
+  {description : Text; id : Text; name : Text; teacherPrincipal : Text};
+type UserRole__599675725 = {#admin; #guest; #user};
+type VoiceSessionInternal__100838565 =
+  {
+    var chunks : [AudioChunk__148599703];
+    hostUsername : Text;
+    id : Text;
+    var isActive : Bool;
+    var participants : [Text]
+  };
+actor {
+  stable accessControlState :
+    {
+      var adminAssigned : Bool;
+      userRoles : Map__605269027<Principal, UserRole__599675725>
+    };
+  stable var assignments : [(Text, Assignment__702522088)];
+  stable var grades : [(Text, Grade__103003982)];
+  stable var nextId : Nat;
+  stable var students : [(Text, StudentProfile__144515968)];
+  stable var subjects : [(Text, Subject__697234594)];
+  stable var verificationCodes : [(Text, Text)];
+  stable voiceSessions :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?VoiceSessionInternal__100838565]];
+      var elementIndex : Nat__490723111
+    }
+};

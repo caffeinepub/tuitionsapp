@@ -1,0 +1,85 @@
+type VoiceSession = 
+ record {
+   hostUsername: text;
+   id: text;
+   isActive: bool;
+   participants: vec text;
+ };
+type Subject = 
+ record {
+   description: text;
+   id: text;
+   name: text;
+   teacherPrincipal: text;
+ };
+type StudentProfile = 
+ record {
+   id: text;
+   name: text;
+   passwordHash: text;
+   username: text;
+ };
+type Grade = 
+ record {
+   assignmentId: text;
+   feedback: text;
+   id: text;
+   score: nat;
+   studentId: text;
+ };
+type AudioChunk = 
+ record {
+   data: vec nat8;
+   senderUsername: text;
+   sessionId: text;
+   timestamp: int;
+ };
+type Assignment = 
+ record {
+   description: text;
+   dueDate: text;
+   id: text;
+   subjectId: text;
+   title: text;
+ };
+service : {
+  addGrade: (studentId: text, assignmentId: text, score: nat, feedback:
+   text) -> (text);
+  checkVerificationCode: (username: text, code: text) -> (bool) query;
+  createAssignment: (subjectId: text, title: text, description: text,
+   dueDate: text) -> (text);
+  createSubject: (name: text, description: text, teacherPrincipal: text) ->
+   (text);
+  createVoiceSession: (sessionId: text, hostUsername: text) -> ();
+  endVoiceSession: (sessionId: text) -> ();
+  getAllAssignments: () -> (vec Assignment) query;
+  getAllSubjects: () -> (vec Subject) query;
+  getGradesByStudent: (studentId: text) -> (vec Grade) query;
+  getStudentById: (id: text) -> (opt StudentProfile) query;
+  getStudentPublicByUsername: (username: text) ->
+   (opt record {
+          text;
+          text;
+        }) query;
+  getVoiceSession: (sessionId: text) -> (opt VoiceSession) query;
+  joinVoiceSession: (sessionId: text, username: text) -> ();
+  listActiveVoiceSessions: () -> (vec VoiceSession) query;
+  loginStudent: (username: text, passwordHash: text) ->
+   (variant {
+      err: text;
+      ok: StudentProfile;
+    }) query;
+  pollAudioChunks: (sessionId: text, sinceTimestamp: int, excludeUsername:
+   text) -> (vec AudioChunk) query;
+  registerStudent: (username: text, name: text, passwordHash: text) ->
+   (variant {
+      err: text;
+      ok: text;
+    });
+  sendAudioChunk: (sessionId: text, senderUsername: text, data: vec nat8) ->
+   ();
+  setVerificationCode: (username: text, code: text) -> ();
+  studentExistsInBackend: (username: text) -> (bool) query;
+  studentHasVerificationCode: (username: text) -> (bool) query;
+  syncStudentForParentLink: (username: text, name: text, code: text) -> ();
+}

@@ -33,6 +33,7 @@ import {
   Pencil,
   Phone,
   Plus,
+  Radio,
   School,
   Search,
   Send,
@@ -120,6 +121,7 @@ import { ReportUser } from "./ReportUser";
 import { StudentReportAI } from "./StudentReportAI";
 import { SupportPortal } from "./SupportPortal";
 import { TermScheduler } from "./TermScheduler";
+import { VoiceLab } from "./VoiceLab";
 
 type Props = {
   onLogout: () => void;
@@ -246,6 +248,7 @@ export function TeacherDashboard({ onLogout }: Props) {
   >({});
   const [studentReportOpen, setStudentReportOpen] = useState(false);
   const [termSchedulerOpen, setTermSchedulerOpen] = useState(false);
+  const [showVoiceLab, setShowVoiceLab] = useState(false);
   const [deleteClassConfirm, setDeleteClassConfirm] = useState<string | null>(
     null,
   );
@@ -910,729 +913,435 @@ export function TeacherDashboard({ onLogout }: Props) {
             <CalendarDays className="w-4 h-4" />
             Term Schedule
           </Button>
+          <Button
+            data-ocid="teacher.voicelab.button"
+            variant="outline"
+            onClick={() => setShowVoiceLab((v) => !v)}
+            className={`font-semibold gap-2 ${showVoiceLab ? "bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700" : "border-emerald-400/50 text-emerald-700 hover:bg-emerald-50"}`}
+          >
+            <Radio className="w-4 h-4" />
+            {showVoiceLab ? "← Dashboard" : "Voice Lab"}
+          </Button>
         </div>
 
-        {/* My Profile (collapsible) */}
-        <section className="mb-8">
-          <button
-            type="button"
-            data-ocid="teacher.profile.toggle"
-            onClick={() => setProfileOpen((o) => !o)}
-            className="flex items-center gap-2 w-full mb-4 group"
-          >
-            <h2 className="font-display text-xl font-bold text-foreground">
-              My Profile
-            </h2>
-            <span className="text-xs text-muted-foreground font-normal ml-1">
-              (optional)
-            </span>
-            {profileOpen ? (
-              <ChevronUp className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
-            )}
-          </button>
+        {/* Voice Lab */}
+        {showVoiceLab && (
+          <div className="mb-8">
+            <VoiceLab
+              currentUsername={teacherName || getTeacherName()}
+              currentDisplayName={teacherName || getTeacherName()}
+              currentRole="teacher"
+              classes={classes}
+            />
+          </div>
+        )}
 
-          {profileOpen && (
-            <Card className="border-border/60 shadow-xs">
-              <CardContent className="p-6 space-y-6">
-                {/* Profile Picture */}
-                <div>
-                  <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                    <Camera className="w-4 h-4 text-teacher" />
-                    Profile Picture
-                  </p>
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-full overflow-hidden bg-teacher-light flex items-center justify-center flex-shrink-0 border-2 border-teacher/20">
-                      {profile.profilePicture ? (
-                        <img
-                          src={profile.profilePicture}
-                          alt="Profile"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <User className="w-7 h-7 text-teacher/60" />
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <input
-                        ref={photoInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handlePhotoSelect}
-                      />
-                      <Button
-                        data-ocid="teacher.profile.upload_button"
-                        size="sm"
-                        variant="outline"
-                        className="gap-1.5 border-teacher/30 text-teacher hover:bg-teacher-light"
-                        onClick={() => photoInputRef.current?.click()}
-                      >
-                        <Camera className="w-3.5 h-3.5" />
-                        {profile.profilePicture
-                          ? "Change Photo"
-                          : "Upload Photo"}
-                      </Button>
-                      {profile.profilePicture && (
-                        <Button
-                          data-ocid="teacher.profile.delete_button"
-                          size="sm"
-                          variant="ghost"
-                          className="gap-1.5 text-muted-foreground hover:text-destructive"
-                          onClick={handleRemovePhoto}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          Remove
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
+        {!showVoiceLab && (
+          <>
+            {/* My Profile (collapsible) */}
+            <section className="mb-8">
+              <button
+                type="button"
+                data-ocid="teacher.profile.toggle"
+                onClick={() => setProfileOpen((o) => !o)}
+                className="flex items-center gap-2 w-full mb-4 group"
+              >
+                <h2 className="font-display text-xl font-bold text-foreground">
+                  My Profile
+                </h2>
+                <span className="text-xs text-muted-foreground font-normal ml-1">
+                  (optional)
+                </span>
+                {profileOpen ? (
+                  <ChevronUp className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
+                )}
+              </button>
 
-                <div className="border-t border-border/60" />
-
-                {/* Awards */}
-                <div>
-                  <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                    <Award className="w-4 h-4 text-teacher" />
-                    Awards &amp; Achievements
-                  </p>
-
-                  {/* Existing awards */}
-                  {profile.awards.length === 0 ? (
-                    <p className="text-xs text-muted-foreground mb-4">
-                      No awards added yet. Add your first award below.
-                    </p>
-                  ) : (
-                    <div className="space-y-2 mb-4">
-                      {profile.awards.map((aw, idx) => (
-                        <div
-                          key={aw.id}
-                          className="flex items-start justify-between gap-3 bg-muted/40 rounded-lg px-3 py-2.5"
-                        >
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-foreground">
-                              {aw.title}
-                              {aw.year && (
-                                <span className="ml-1.5 text-xs text-muted-foreground font-normal">
-                                  ({aw.year})
-                                </span>
-                              )}
-                            </p>
-                            {aw.description && (
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                {aw.description}
-                              </p>
-                            )}
-                          </div>
-                          <Button
-                            data-ocid={`teacher.award.delete_button.${idx + 1}`}
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6 flex-shrink-0 text-muted-foreground hover:text-destructive"
-                            onClick={() => handleRemoveAward(aw.id)}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
+              {profileOpen && (
+                <Card className="border-border/60 shadow-xs">
+                  <CardContent className="p-6 space-y-6">
+                    {/* Profile Picture */}
+                    <div>
+                      <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <Camera className="w-4 h-4 text-teacher" />
+                        Profile Picture
+                      </p>
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-full overflow-hidden bg-teacher-light flex items-center justify-center flex-shrink-0 border-2 border-teacher/20">
+                          {profile.profilePicture ? (
+                            <img
+                              src={profile.profilePicture}
+                              alt="Profile"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <User className="w-7 h-7 text-teacher/60" />
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Add award form */}
-                  <div className="bg-muted/20 rounded-xl border border-border/50 p-4 space-y-3">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                      Add Award
-                    </p>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="award-title" className="text-xs">
-                        Title <span className="text-destructive">*</span>
-                      </Label>
-                      <Input
-                        id="award-title"
-                        placeholder="e.g. Best Teacher of the Year"
-                        value={awardTitle}
-                        onChange={(e) => setAwardTitle(e.target.value)}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="award-year" className="text-xs">
-                          Year{" "}
-                          <span className="text-muted-foreground font-normal">
-                            (optional)
-                          </span>
-                        </Label>
-                        <Input
-                          id="award-year"
-                          placeholder="e.g. 2022"
-                          value={awardYear}
-                          onChange={(e) => setAwardYear(e.target.value)}
-                          className="h-8 text-sm"
-                        />
+                        <div className="flex gap-2">
+                          <input
+                            ref={photoInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handlePhotoSelect}
+                          />
+                          <Button
+                            data-ocid="teacher.profile.upload_button"
+                            size="sm"
+                            variant="outline"
+                            className="gap-1.5 border-teacher/30 text-teacher hover:bg-teacher-light"
+                            onClick={() => photoInputRef.current?.click()}
+                          >
+                            <Camera className="w-3.5 h-3.5" />
+                            {profile.profilePicture
+                              ? "Change Photo"
+                              : "Upload Photo"}
+                          </Button>
+                          {profile.profilePicture && (
+                            <Button
+                              data-ocid="teacher.profile.delete_button"
+                              size="sm"
+                              variant="ghost"
+                              className="gap-1.5 text-muted-foreground hover:text-destructive"
+                              onClick={handleRemovePhoto}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              Remove
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="award-desc" className="text-xs">
-                        Description{" "}
-                        <span className="text-muted-foreground font-normal">
-                          (optional)
-                        </span>
-                      </Label>
-                      <Input
-                        id="award-desc"
-                        placeholder="Brief description of the award"
-                        value={awardDesc}
-                        onChange={(e) => setAwardDesc(e.target.value)}
-                        className="h-8 text-sm"
-                      />
-                    </div>
-                    <Button
-                      data-ocid="teacher.award.submit_button"
-                      size="sm"
-                      onClick={handleAddAward}
-                      className="bg-teacher hover:bg-teacher/90 text-white gap-1.5"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      Save Award
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </section>
 
-        {/* Scheduled Sessions */}
-        <section className="mb-8">
-          <h2 className="font-display text-xl font-bold text-foreground mb-4">
-            Scheduled Sessions
-          </h2>
-          {scheduledSessions.length === 0 ? (
-            <div
-              data-ocid="teacher.sessions.list"
-              className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
-            >
-              <Calendar className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
-              <p className="text-sm font-medium text-muted-foreground">
-                No sessions scheduled yet.
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Use "Schedule Session" above to add a session.
-              </p>
-            </div>
-          ) : (
-            <div
-              data-ocid="teacher.sessions.list"
-              className="bg-card rounded-xl border border-border/60 shadow-xs divide-y divide-border/60"
-            >
-              {scheduledSessions.map((s, i) => (
-                <div
-                  key={s.id}
-                  data-ocid={`teacher.sessions.item.${i + 1}`}
-                  className="flex items-center justify-between px-4 py-3.5 gap-4"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-7 h-7 rounded-lg bg-teacher-light flex items-center justify-center flex-shrink-0">
-                      <Calendar className="w-3.5 h-3.5 text-teacher" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {s.subject}
+                    <div className="border-t border-border/60" />
+
+                    {/* Awards */}
+                    <div>
+                      <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <Award className="w-4 h-4 text-teacher" />
+                        Awards &amp; Achievements
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {s.date} at {s.time}
-                        {s.notes ? ` — ${s.notes}` : ""}
-                      </p>
+
+                      {/* Existing awards */}
+                      {profile.awards.length === 0 ? (
+                        <p className="text-xs text-muted-foreground mb-4">
+                          No awards added yet. Add your first award below.
+                        </p>
+                      ) : (
+                        <div className="space-y-2 mb-4">
+                          {profile.awards.map((aw, idx) => (
+                            <div
+                              key={aw.id}
+                              className="flex items-start justify-between gap-3 bg-muted/40 rounded-lg px-3 py-2.5"
+                            >
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-foreground">
+                                  {aw.title}
+                                  {aw.year && (
+                                    <span className="ml-1.5 text-xs text-muted-foreground font-normal">
+                                      ({aw.year})
+                                    </span>
+                                  )}
+                                </p>
+                                {aw.description && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    {aw.description}
+                                  </p>
+                                )}
+                              </div>
+                              <Button
+                                data-ocid={`teacher.award.delete_button.${idx + 1}`}
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6 flex-shrink-0 text-muted-foreground hover:text-destructive"
+                                onClick={() => handleRemoveAward(aw.id)}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Add award form */}
+                      <div className="bg-muted/20 rounded-xl border border-border/50 p-4 space-y-3">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Add Award
+                        </p>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="award-title" className="text-xs">
+                            Title <span className="text-destructive">*</span>
+                          </Label>
+                          <Input
+                            id="award-title"
+                            placeholder="e.g. Best Teacher of the Year"
+                            value={awardTitle}
+                            onChange={(e) => setAwardTitle(e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <Label htmlFor="award-year" className="text-xs">
+                              Year{" "}
+                              <span className="text-muted-foreground font-normal">
+                                (optional)
+                              </span>
+                            </Label>
+                            <Input
+                              id="award-year"
+                              placeholder="e.g. 2022"
+                              value={awardYear}
+                              onChange={(e) => setAwardYear(e.target.value)}
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="award-desc" className="text-xs">
+                            Description{" "}
+                            <span className="text-muted-foreground font-normal">
+                              (optional)
+                            </span>
+                          </Label>
+                          <Input
+                            id="award-desc"
+                            placeholder="Brief description of the award"
+                            value={awardDesc}
+                            onChange={(e) => setAwardDesc(e.target.value)}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <Button
+                          data-ocid="teacher.award.submit_button"
+                          size="sm"
+                          onClick={handleAddAward}
+                          className="bg-teacher hover:bg-teacher/90 text-white gap-1.5"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Save Award
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                  <Button
-                    data-ocid={`teacher.sessions.delete_button.${i + 1}`}
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7 text-muted-foreground hover:text-destructive flex-shrink-0"
-                    onClick={() => handleDeleteSession(s.id)}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+                  </CardContent>
+                </Card>
+              )}
+            </section>
 
-        {/* My Classes */}
-        <section className="mb-8">
-          <button
-            type="button"
-            data-ocid="teacher.classes.section.toggle"
-            onClick={() => setClassSectionOpen((o) => !o)}
-            className="flex items-center gap-2 w-full mb-4 group"
-          >
-            <School className="w-5 h-5 text-teacher" />
-            <h2 className="font-display text-xl font-bold text-foreground">
-              My Classes
-            </h2>
-            {classSectionOpen ? (
-              <ChevronUp className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
-            )}
-          </button>
-
-          {classSectionOpen && (
-            <div className="space-y-3">
-              <Button
-                data-ocid="teacher.classes.create.button"
-                onClick={() => setCreateClassOpen(true)}
-                className="bg-teacher hover:bg-teacher/90 text-white gap-2"
-                size="sm"
-              >
-                <Plus className="w-4 h-4" />
-                Create Class
-              </Button>
-
-              {classes.length === 0 ? (
+            {/* Scheduled Sessions */}
+            <section className="mb-8">
+              <h2 className="font-display text-xl font-bold text-foreground mb-4">
+                Scheduled Sessions
+              </h2>
+              {scheduledSessions.length === 0 ? (
                 <div
-                  data-ocid="teacher.classes.empty_state"
+                  data-ocid="teacher.sessions.list"
                   className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
                 >
-                  <School className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+                  <Calendar className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
                   <p className="text-sm font-medium text-muted-foreground">
-                    No classes yet.
+                    No sessions scheduled yet.
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Create a class and add students to get started.
+                    Use "Schedule Session" above to add a session.
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {classes.map((cls, i) => {
-                    const isExpanded = expandedClassId === cls.id;
-                    const searchVal = classStudentSearch[cls.id] ?? "";
-                    const allStudents = getStudentUsers();
-                    const matchingStudents =
-                      searchVal.trim().length > 0
-                        ? allStudents.filter(
-                            (s) =>
-                              !cls.studentUsernames.includes(
-                                s.username.toLowerCase(),
-                              ) &&
-                              (s.username
-                                .toLowerCase()
-                                .includes(searchVal.toLowerCase()) ||
-                                s.name
-                                  .toLowerCase()
-                                  .includes(searchVal.toLowerCase())),
-                          )
-                        : [];
-                    const isCopied = copiedClassId === cls.id;
-                    return (
-                      <Card
-                        key={cls.id}
-                        data-ocid={`teacher.classes.item.${i + 1}`}
-                        className="border border-border/60 shadow-xs"
+                <div
+                  data-ocid="teacher.sessions.list"
+                  className="bg-card rounded-xl border border-border/60 shadow-xs divide-y divide-border/60"
+                >
+                  {scheduledSessions.map((s, i) => (
+                    <div
+                      key={s.id}
+                      data-ocid={`teacher.sessions.item.${i + 1}`}
+                      className="flex items-center justify-between px-4 py-3.5 gap-4"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-7 h-7 rounded-lg bg-teacher-light flex items-center justify-center flex-shrink-0">
+                          <Calendar className="w-3.5 h-3.5 text-teacher" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">
+                            {s.subject}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {s.date} at {s.time}
+                            {s.notes ? ` — ${s.notes}` : ""}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        data-ocid={`teacher.sessions.delete_button.${i + 1}`}
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive flex-shrink-0"
+                        onClick={() => handleDeleteSession(s.id)}
                       >
-                        <CardHeader className="pb-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <CardTitle className="text-base font-bold truncate">
-                                {cls.name}
-                              </CardTitle>
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                {cls.subject}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <Badge variant="secondary" className="text-xs">
-                                {cls.studentUsernames.length} student
-                                {cls.studentUsernames.length !== 1 ? "s" : ""}
-                              </Badge>
-                              <Button
-                                data-ocid={`teacher.classes.delete_button.${i + 1}`}
-                                size="icon"
-                                variant="ghost"
-                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                                onClick={() => setDeleteClassConfirm(cls.id)}
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          </div>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
 
-                          {/* Class Code */}
-                          <div className="flex items-center gap-2 mt-3 bg-muted/50 rounded-lg px-3 py-2">
-                            <span className="text-xs text-muted-foreground font-medium mr-1">
-                              Class Code:
-                            </span>
-                            <span className="font-mono text-lg font-bold text-teacher tracking-widest flex-1">
-                              {cls.classCode}
-                            </span>
-                            <Button
-                              data-ocid={`teacher.classes.copy_code.${i + 1}`}
-                              size="sm"
-                              variant="outline"
-                              className="h-7 gap-1 text-xs"
-                              onClick={() => handleCopyClassCode(cls)}
-                            >
-                              <Copy className="w-3 h-3" />
-                              {isCopied ? "Copied!" : "Copy"}
-                            </Button>
-                          </div>
+            {/* My Classes */}
+            <section className="mb-8">
+              <button
+                type="button"
+                data-ocid="teacher.classes.section.toggle"
+                onClick={() => setClassSectionOpen((o) => !o)}
+                className="flex items-center gap-2 w-full mb-4 group"
+              >
+                <School className="w-5 h-5 text-teacher" />
+                <h2 className="font-display text-xl font-bold text-foreground">
+                  My Classes
+                </h2>
+                {classSectionOpen ? (
+                  <ChevronUp className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
+                )}
+              </button>
 
-                          <button
-                            type="button"
-                            className="flex items-center gap-1 mt-2 text-xs text-teacher hover:text-teacher/80 font-medium transition-colors"
-                            onClick={() =>
-                              setExpandedClassId(isExpanded ? null : cls.id)
-                            }
+              {classSectionOpen && (
+                <div className="space-y-3">
+                  <Button
+                    data-ocid="teacher.classes.create.button"
+                    onClick={() => setCreateClassOpen(true)}
+                    className="bg-teacher hover:bg-teacher/90 text-white gap-2"
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create Class
+                  </Button>
+
+                  {classes.length === 0 ? (
+                    <div
+                      data-ocid="teacher.classes.empty_state"
+                      className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
+                    >
+                      <School className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+                      <p className="text-sm font-medium text-muted-foreground">
+                        No classes yet.
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Create a class and add students to get started.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {classes.map((cls, i) => {
+                        const isExpanded = expandedClassId === cls.id;
+                        const searchVal = classStudentSearch[cls.id] ?? "";
+                        const allStudents = getStudentUsers();
+                        const matchingStudents =
+                          searchVal.trim().length > 0
+                            ? allStudents.filter(
+                                (s) =>
+                                  !cls.studentUsernames.includes(
+                                    s.username.toLowerCase(),
+                                  ) &&
+                                  (s.username
+                                    .toLowerCase()
+                                    .includes(searchVal.toLowerCase()) ||
+                                    s.name
+                                      .toLowerCase()
+                                      .includes(searchVal.toLowerCase())),
+                              )
+                            : [];
+                        const isCopied = copiedClassId === cls.id;
+                        return (
+                          <Card
+                            key={cls.id}
+                            data-ocid={`teacher.classes.item.${i + 1}`}
+                            className="border border-border/60 shadow-xs"
                           >
-                            {isExpanded ? (
-                              <>
-                                <ChevronUp className="w-3.5 h-3.5" /> Hide
-                                students
-                              </>
-                            ) : (
-                              <>
-                                <ChevronDown className="w-3.5 h-3.5" /> Manage
-                                students
-                              </>
-                            )}
-                          </button>
-                        </CardHeader>
-
-                        {isExpanded && (
-                          <CardContent className="pt-0 pb-4">
-                            {/* Enrolled students */}
-                            {cls.studentUsernames.length > 0 ? (
-                              <div className="mb-3 space-y-1">
-                                {cls.studentUsernames.map((uname, si) => {
-                                  const stu = allStudents.find(
-                                    (s) =>
-                                      s.username.toLowerCase() ===
-                                      uname.toLowerCase(),
-                                  );
-                                  return (
-                                    <div
-                                      key={uname}
-                                      data-ocid={`teacher.classes.student.item.${si + 1}`}
-                                      className="flex items-center justify-between bg-muted/40 rounded-lg px-3 py-1.5"
-                                    >
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded-full bg-teacher-light flex items-center justify-center">
-                                          <User className="w-3 h-3 text-teacher" />
-                                        </div>
-                                        <span className="text-sm font-medium">
-                                          {stu ? stu.name : uname}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">
-                                          @{uname}
-                                        </span>
-                                      </div>
-                                      <Button
-                                        data-ocid={`teacher.classes.remove_student.${si + 1}`}
-                                        size="icon"
-                                        variant="ghost"
-                                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                                        onClick={() =>
-                                          handleRemoveStudentFromClass(
-                                            cls.id,
-                                            uname,
-                                          )
-                                        }
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </Button>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <p className="text-xs text-muted-foreground mb-3">
-                                No students yet. Search below or share the class
-                                code.
-                              </p>
-                            )}
-
-                            {/* Add student search */}
-                            <div className="relative">
-                              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                              <input
-                                data-ocid={`teacher.classes.search_input.${i + 1}`}
-                                type="text"
-                                placeholder="Search students by name or username..."
-                                className="w-full pl-8 pr-3 py-1.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-teacher/50"
-                                value={searchVal}
-                                onChange={(e) =>
-                                  setClassStudentSearch((prev) => ({
-                                    ...prev,
-                                    [cls.id]: e.target.value,
-                                  }))
-                                }
-                              />
-                            </div>
-
-                            {matchingStudents.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5 mt-2">
-                                {matchingStudents.slice(0, 8).map((s) => (
-                                  <button
-                                    key={s.username}
-                                    type="button"
-                                    onClick={() =>
-                                      handleAddStudentToClass(
-                                        cls.id,
-                                        s.username,
-                                      )
-                                    }
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teacher-light text-teacher text-xs font-medium hover:bg-teacher hover:text-white transition-colors"
+                            <CardHeader className="pb-2">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <CardTitle className="text-base font-bold truncate">
+                                    {cls.name}
+                                  </CardTitle>
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    {cls.subject}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
                                   >
-                                    <Plus className="w-3 h-3" />
-                                    {s.name}{" "}
-                                    <span className="opacity-70">
-                                      @{s.username}
-                                    </span>
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-
-                            {searchVal.trim().length > 0 &&
-                              matchingStudents.length === 0 && (
-                                <p className="text-xs text-muted-foreground mt-2">
-                                  No matching students found.
-                                </p>
-                              )}
-
-                            {/* Announcements */}
-                            <div className="mt-4 border-t border-border/40 pt-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs font-semibold text-foreground flex items-center gap-1">
-                                  <Megaphone className="w-3.5 h-3.5 text-teacher" />
-                                  Announcements
-                                </span>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-6 text-xs gap-1"
-                                  onClick={() =>
-                                    setAnnouncementFormOpen((prev) => ({
-                                      ...prev,
-                                      [cls.id]: !prev[cls.id],
-                                    }))
-                                  }
-                                >
-                                  <Plus className="w-3 h-3" />
-                                  Post
-                                </Button>
-                              </div>
-
-                              {announcementFormOpen[cls.id] && (
-                                <div className="mb-3 space-y-2">
-                                  <textarea
-                                    className="w-full text-sm border border-border rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-teacher/50 bg-background"
-                                    rows={2}
-                                    placeholder="Write an announcement for this class..."
-                                    value={announcementText[cls.id] ?? ""}
-                                    onChange={(e) =>
-                                      setAnnouncementText((prev) => ({
-                                        ...prev,
-                                        [cls.id]: e.target.value,
-                                      }))
-                                    }
-                                  />
-                                  <div className="flex gap-2">
-                                    <Button
-                                      size="sm"
-                                      className="bg-teacher hover:bg-teacher/90 text-white h-7 text-xs"
-                                      onClick={() =>
-                                        handlePostAnnouncement(cls.id)
-                                      }
-                                      disabled={
-                                        !announcementText[cls.id]?.trim()
-                                      }
-                                    >
-                                      Post
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-7 text-xs"
-                                      onClick={() =>
-                                        setAnnouncementFormOpen((prev) => ({
-                                          ...prev,
-                                          [cls.id]: false,
-                                        }))
-                                      }
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </div>
-                                </div>
-                              )}
-
-                              {cls.announcements.length === 0 ? (
-                                <p className="text-xs text-muted-foreground">
-                                  No announcements yet.
-                                </p>
-                              ) : (
-                                <div className="space-y-2">
-                                  {cls.announcements.map(
-                                    (ann: ClassAnnouncement) => (
-                                      <div
-                                        key={ann.id}
-                                        className="flex items-start justify-between gap-2 bg-muted/40 rounded-lg px-3 py-2"
-                                      >
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-sm text-foreground">
-                                            {ann.text}
-                                          </p>
-                                          <p className="text-xs text-muted-foreground mt-0.5">
-                                            {new Date(
-                                              ann.createdAt,
-                                            ).toLocaleString()}
-                                          </p>
-                                        </div>
-                                        <Button
-                                          size="icon"
-                                          variant="ghost"
-                                          className="h-6 w-6 text-muted-foreground hover:text-destructive flex-shrink-0"
-                                          onClick={() =>
-                                            handleDeleteAnnouncement(
-                                              cls.id,
-                                              ann.id,
-                                            )
-                                          }
-                                        >
-                                          <X className="w-3 h-3" />
-                                        </Button>
-                                      </div>
-                                    ),
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                            {/* Class Chat */}
-                            <div className="mt-4 border-t border-border/40 pt-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs font-semibold text-foreground flex items-center gap-1">
-                                  <MessageSquare className="w-3.5 h-3.5 text-teacher" />
-                                  Class Chat
-                                </span>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-6 text-xs gap-1"
-                                  onClick={() =>
-                                    classChatOpen[cls.id]
-                                      ? closeClassChat(cls.id)
-                                      : openClassChat(cls.id)
-                                  }
-                                >
-                                  {classChatOpen[cls.id]
-                                    ? "Close"
-                                    : "Open Chat"}
-                                </Button>
-                              </div>
-                              {classChatOpen[cls.id] && (
-                                <div className="flex flex-col gap-2">
-                                  <div
-                                    className="bg-muted/30 rounded-lg p-2 h-40 overflow-y-auto flex flex-col gap-1 text-xs"
-                                    style={{ scrollbarWidth: "thin" }}
-                                  >
-                                    {(classChatMessages[cls.id] ?? [])
-                                      .length === 0 ? (
-                                      <p className="text-muted-foreground text-center mt-4">
-                                        No messages yet. Start the conversation!
-                                      </p>
-                                    ) : (
-                                      (classChatMessages[cls.id] ?? []).map(
-                                        (msg) => (
-                                          <div
-                                            key={msg.id}
-                                            className={`flex gap-1.5 ${msg.senderRole === "teacher" ? "flex-row-reverse" : ""}`}
-                                          >
-                                            <div
-                                              className={`max-w-[75%] px-2 py-1 rounded-lg ${msg.senderRole === "teacher" ? "bg-teacher text-white" : "bg-white border border-border"}`}
-                                            >
-                                              <p
-                                                className={`text-[10px] font-semibold mb-0.5 ${msg.senderRole === "teacher" ? "text-white/80" : "text-teacher"}`}
-                                              >
-                                                {msg.senderRole === "teacher"
-                                                  ? "You (Teacher)"
-                                                  : msg.senderUsername}
-                                              </p>
-                                              <p>{msg.text}</p>
-                                            </div>
-                                          </div>
-                                        ),
-                                      )
-                                    )}
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <input
-                                      type="text"
-                                      className="flex-1 text-xs border border-border rounded-lg px-2 py-1.5 bg-background focus:outline-none focus:ring-1 focus:ring-teacher/50"
-                                      placeholder="Type a message..."
-                                      value={classChatInput[cls.id] ?? ""}
-                                      onChange={(e) =>
-                                        setClassChatInput((prev) => ({
-                                          ...prev,
-                                          [cls.id]: e.target.value,
-                                        }))
-                                      }
-                                      onKeyDown={(e) =>
-                                        e.key === "Enter" &&
-                                        sendClassChat(cls.id)
-                                      }
-                                    />
-                                    <Button
-                                      size="sm"
-                                      className="bg-teacher hover:bg-teacher/90 text-white h-7 text-xs px-2"
-                                      onClick={() => sendClassChat(cls.id)}
-                                    >
-                                      Send
-                                    </Button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Roll Call */}
-                            {cls.studentUsernames.length > 0 && (
-                              <div className="mt-4 border-t border-border/40 pt-4">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-xs font-semibold text-foreground flex items-center gap-1">
-                                    <ClipboardList className="w-3.5 h-3.5 text-teacher" />
-                                    Roll Call
-                                  </span>
+                                    {cls.studentUsernames.length} student
+                                    {cls.studentUsernames.length !== 1
+                                      ? "s"
+                                      : ""}
+                                  </Badge>
                                   <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-6 text-xs gap-1"
+                                    data-ocid={`teacher.classes.delete_button.${i + 1}`}
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
                                     onClick={() =>
-                                      rollCallOpen[cls.id]
-                                        ? setRollCallOpen((prev) => ({
-                                            ...prev,
-                                            [cls.id]: false,
-                                          }))
-                                        : openRollCall(
-                                            cls.id,
-                                            cls.studentUsernames,
-                                          )
+                                      setDeleteClassConfirm(cls.id)
                                     }
                                   >
-                                    {rollCallOpen[cls.id]
-                                      ? "Close"
-                                      : "Take Roll"}
+                                    <Trash2 className="w-3.5 h-3.5" />
                                   </Button>
                                 </div>
-                                {rollCallOpen[cls.id] && (
-                                  <div className="space-y-2">
-                                    {cls.studentUsernames.map((uname) => {
-                                      const isPresent =
-                                        rollEntries[cls.id]?.[uname] ?? true;
+                              </div>
+
+                              {/* Class Code */}
+                              <div className="flex items-center gap-2 mt-3 bg-muted/50 rounded-lg px-3 py-2">
+                                <span className="text-xs text-muted-foreground font-medium mr-1">
+                                  Class Code:
+                                </span>
+                                <span className="font-mono text-lg font-bold text-teacher tracking-widest flex-1">
+                                  {cls.classCode}
+                                </span>
+                                <Button
+                                  data-ocid={`teacher.classes.copy_code.${i + 1}`}
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 gap-1 text-xs"
+                                  onClick={() => handleCopyClassCode(cls)}
+                                >
+                                  <Copy className="w-3 h-3" />
+                                  {isCopied ? "Copied!" : "Copy"}
+                                </Button>
+                              </div>
+
+                              <button
+                                type="button"
+                                className="flex items-center gap-1 mt-2 text-xs text-teacher hover:text-teacher/80 font-medium transition-colors"
+                                onClick={() =>
+                                  setExpandedClassId(isExpanded ? null : cls.id)
+                                }
+                              >
+                                {isExpanded ? (
+                                  <>
+                                    <ChevronUp className="w-3.5 h-3.5" /> Hide
+                                    students
+                                  </>
+                                ) : (
+                                  <>
+                                    <ChevronDown className="w-3.5 h-3.5" />{" "}
+                                    Manage students
+                                  </>
+                                )}
+                              </button>
+                            </CardHeader>
+
+                            {isExpanded && (
+                              <CardContent className="pt-0 pb-4">
+                                {/* Enrolled students */}
+                                {cls.studentUsernames.length > 0 ? (
+                                  <div className="mb-3 space-y-1">
+                                    {cls.studentUsernames.map((uname, si) => {
                                       const stu = allStudents.find(
                                         (s) =>
                                           s.username.toLowerCase() ===
@@ -1641,762 +1350,1097 @@ export function TeacherDashboard({ onLogout }: Props) {
                                       return (
                                         <div
                                           key={uname}
-                                          className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-1.5"
+                                          data-ocid={`teacher.classes.student.item.${si + 1}`}
+                                          className="flex items-center justify-between bg-muted/40 rounded-lg px-3 py-1.5"
                                         >
                                           <div className="flex items-center gap-2">
                                             <div className="w-6 h-6 rounded-full bg-teacher-light flex items-center justify-center">
                                               <User className="w-3 h-3 text-teacher" />
                                             </div>
-                                            <span
-                                              className={`w-2 h-2 rounded-full ${
-                                                isStudentOnline(uname)
-                                                  ? "bg-green-500"
-                                                  : "bg-gray-400"
-                                              }`}
-                                            />
                                             <span className="text-sm font-medium">
                                               {stu ? stu.name : uname}
                                             </span>
-                                            <span
-                                              className={`text-xs ${
-                                                isStudentOnline(uname)
-                                                  ? "text-green-600"
-                                                  : "text-gray-400"
-                                              }`}
-                                            >
-                                              {isStudentOnline(uname)
-                                                ? "Online"
-                                                : "Offline"}
+                                            <span className="text-xs text-muted-foreground">
+                                              @{uname}
                                             </span>
                                           </div>
-                                          <button
-                                            type="button"
+                                          <Button
+                                            data-ocid={`teacher.classes.remove_student.${si + 1}`}
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-6 w-6 text-muted-foreground hover:text-destructive"
                                             onClick={() =>
-                                              toggleRollEntry(cls.id, uname)
+                                              handleRemoveStudentFromClass(
+                                                cls.id,
+                                                uname,
+                                              )
                                             }
-                                            className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
-                                              isPresent
-                                                ? "bg-green-100 text-green-700 hover:bg-green-200"
-                                                : "bg-red-100 text-red-700 hover:bg-red-200"
-                                            }`}
                                           >
-                                            {isPresent
-                                              ? "✓ Present"
-                                              : "✗ Absent"}
-                                          </button>
+                                            <X className="w-3 h-3" />
+                                          </Button>
                                         </div>
                                       );
                                     })}
-                                    <Button
-                                      size="sm"
-                                      className="w-full bg-teacher hover:bg-teacher/90 text-white text-xs mt-2"
-                                      onClick={() => submitRoll(cls)}
-                                    >
-                                      Submit Roll Call
-                                    </Button>
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-muted-foreground mb-3">
+                                    No students yet. Search below or share the
+                                    class code.
+                                  </p>
+                                )}
+
+                                {/* Add student search */}
+                                <div className="relative">
+                                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                  <input
+                                    data-ocid={`teacher.classes.search_input.${i + 1}`}
+                                    type="text"
+                                    placeholder="Search students by name or username..."
+                                    className="w-full pl-8 pr-3 py-1.5 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-1 focus:ring-teacher/50"
+                                    value={searchVal}
+                                    onChange={(e) =>
+                                      setClassStudentSearch((prev) => ({
+                                        ...prev,
+                                        [cls.id]: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                </div>
+
+                                {matchingStudents.length > 0 && (
+                                  <div className="flex flex-wrap gap-1.5 mt-2">
+                                    {matchingStudents.slice(0, 8).map((s) => (
+                                      <button
+                                        key={s.username}
+                                        type="button"
+                                        onClick={() =>
+                                          handleAddStudentToClass(
+                                            cls.id,
+                                            s.username,
+                                          )
+                                        }
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teacher-light text-teacher text-xs font-medium hover:bg-teacher hover:text-white transition-colors"
+                                      >
+                                        <Plus className="w-3 h-3" />
+                                        {s.name}{" "}
+                                        <span className="opacity-70">
+                                          @{s.username}
+                                        </span>
+                                      </button>
+                                    ))}
                                   </div>
                                 )}
 
-                                {/* Past Roll Calls */}
-                                {rollHistoryOpen[cls.id] &&
-                                  (() => {
-                                    const rolls = getRollCallsForClass(cls.id);
-                                    return (
-                                      <div className="mt-3 border-t border-border/40 pt-3 space-y-2">
-                                        <div className="flex items-center justify-between mb-1">
-                                          <span className="text-xs font-semibold text-foreground flex items-center gap-1">
-                                            <ClipboardCheck className="w-3.5 h-3.5 text-teacher" />
-                                            Roll History
-                                          </span>
-                                          <button
-                                            type="button"
-                                            className="text-xs text-muted-foreground hover:text-foreground underline"
-                                            onClick={() =>
-                                              setRollHistoryOpen((prev) => ({
+                                {searchVal.trim().length > 0 &&
+                                  matchingStudents.length === 0 && (
+                                    <p className="text-xs text-muted-foreground mt-2">
+                                      No matching students found.
+                                    </p>
+                                  )}
+
+                                {/* Announcements */}
+                                <div className="mt-4 border-t border-border/40 pt-4">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs font-semibold text-foreground flex items-center gap-1">
+                                      <Megaphone className="w-3.5 h-3.5 text-teacher" />
+                                      Announcements
+                                    </span>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-6 text-xs gap-1"
+                                      onClick={() =>
+                                        setAnnouncementFormOpen((prev) => ({
+                                          ...prev,
+                                          [cls.id]: !prev[cls.id],
+                                        }))
+                                      }
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                      Post
+                                    </Button>
+                                  </div>
+
+                                  {announcementFormOpen[cls.id] && (
+                                    <div className="mb-3 space-y-2">
+                                      <textarea
+                                        className="w-full text-sm border border-border rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-teacher/50 bg-background"
+                                        rows={2}
+                                        placeholder="Write an announcement for this class..."
+                                        value={announcementText[cls.id] ?? ""}
+                                        onChange={(e) =>
+                                          setAnnouncementText((prev) => ({
+                                            ...prev,
+                                            [cls.id]: e.target.value,
+                                          }))
+                                        }
+                                      />
+                                      <div className="flex gap-2">
+                                        <Button
+                                          size="sm"
+                                          className="bg-teacher hover:bg-teacher/90 text-white h-7 text-xs"
+                                          onClick={() =>
+                                            handlePostAnnouncement(cls.id)
+                                          }
+                                          disabled={
+                                            !announcementText[cls.id]?.trim()
+                                          }
+                                        >
+                                          Post
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="h-7 text-xs"
+                                          onClick={() =>
+                                            setAnnouncementFormOpen((prev) => ({
+                                              ...prev,
+                                              [cls.id]: false,
+                                            }))
+                                          }
+                                        >
+                                          Cancel
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {cls.announcements.length === 0 ? (
+                                    <p className="text-xs text-muted-foreground">
+                                      No announcements yet.
+                                    </p>
+                                  ) : (
+                                    <div className="space-y-2">
+                                      {cls.announcements.map(
+                                        (ann: ClassAnnouncement) => (
+                                          <div
+                                            key={ann.id}
+                                            className="flex items-start justify-between gap-2 bg-muted/40 rounded-lg px-3 py-2"
+                                          >
+                                            <div className="flex-1 min-w-0">
+                                              <p className="text-sm text-foreground">
+                                                {ann.text}
+                                              </p>
+                                              <p className="text-xs text-muted-foreground mt-0.5">
+                                                {new Date(
+                                                  ann.createdAt,
+                                                ).toLocaleString()}
+                                              </p>
+                                            </div>
+                                            <Button
+                                              size="icon"
+                                              variant="ghost"
+                                              className="h-6 w-6 text-muted-foreground hover:text-destructive flex-shrink-0"
+                                              onClick={() =>
+                                                handleDeleteAnnouncement(
+                                                  cls.id,
+                                                  ann.id,
+                                                )
+                                              }
+                                            >
+                                              <X className="w-3 h-3" />
+                                            </Button>
+                                          </div>
+                                        ),
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                                {/* Class Chat */}
+                                <div className="mt-4 border-t border-border/40 pt-4">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs font-semibold text-foreground flex items-center gap-1">
+                                      <MessageSquare className="w-3.5 h-3.5 text-teacher" />
+                                      Class Chat
+                                    </span>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-6 text-xs gap-1"
+                                      onClick={() =>
+                                        classChatOpen[cls.id]
+                                          ? closeClassChat(cls.id)
+                                          : openClassChat(cls.id)
+                                      }
+                                    >
+                                      {classChatOpen[cls.id]
+                                        ? "Close"
+                                        : "Open Chat"}
+                                    </Button>
+                                  </div>
+                                  {classChatOpen[cls.id] && (
+                                    <div className="flex flex-col gap-2">
+                                      <div
+                                        className="bg-muted/30 rounded-lg p-2 h-40 overflow-y-auto flex flex-col gap-1 text-xs"
+                                        style={{ scrollbarWidth: "thin" }}
+                                      >
+                                        {(classChatMessages[cls.id] ?? [])
+                                          .length === 0 ? (
+                                          <p className="text-muted-foreground text-center mt-4">
+                                            No messages yet. Start the
+                                            conversation!
+                                          </p>
+                                        ) : (
+                                          (classChatMessages[cls.id] ?? []).map(
+                                            (msg) => (
+                                              <div
+                                                key={msg.id}
+                                                className={`flex gap-1.5 ${msg.senderRole === "teacher" ? "flex-row-reverse" : ""}`}
+                                              >
+                                                <div
+                                                  className={`max-w-[75%] px-2 py-1 rounded-lg ${msg.senderRole === "teacher" ? "bg-teacher text-white" : "bg-white border border-border"}`}
+                                                >
+                                                  <p
+                                                    className={`text-[10px] font-semibold mb-0.5 ${msg.senderRole === "teacher" ? "text-white/80" : "text-teacher"}`}
+                                                  >
+                                                    {msg.senderRole ===
+                                                    "teacher"
+                                                      ? "You (Teacher)"
+                                                      : msg.senderUsername}
+                                                  </p>
+                                                  <p>{msg.text}</p>
+                                                </div>
+                                              </div>
+                                            ),
+                                          )
+                                        )}
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <input
+                                          type="text"
+                                          className="flex-1 text-xs border border-border rounded-lg px-2 py-1.5 bg-background focus:outline-none focus:ring-1 focus:ring-teacher/50"
+                                          placeholder="Type a message..."
+                                          value={classChatInput[cls.id] ?? ""}
+                                          onChange={(e) =>
+                                            setClassChatInput((prev) => ({
+                                              ...prev,
+                                              [cls.id]: e.target.value,
+                                            }))
+                                          }
+                                          onKeyDown={(e) =>
+                                            e.key === "Enter" &&
+                                            sendClassChat(cls.id)
+                                          }
+                                        />
+                                        <Button
+                                          size="sm"
+                                          className="bg-teacher hover:bg-teacher/90 text-white h-7 text-xs px-2"
+                                          onClick={() => sendClassChat(cls.id)}
+                                        >
+                                          Send
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Roll Call */}
+                                {cls.studentUsernames.length > 0 && (
+                                  <div className="mt-4 border-t border-border/40 pt-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="text-xs font-semibold text-foreground flex items-center gap-1">
+                                        <ClipboardList className="w-3.5 h-3.5 text-teacher" />
+                                        Roll Call
+                                      </span>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-6 text-xs gap-1"
+                                        onClick={() =>
+                                          rollCallOpen[cls.id]
+                                            ? setRollCallOpen((prev) => ({
                                                 ...prev,
                                                 [cls.id]: false,
                                               }))
-                                            }
-                                          >
-                                            Hide
-                                          </button>
-                                        </div>
-                                        {rolls.length === 0 ? (
-                                          <p className="text-xs text-muted-foreground italic">
-                                            No rolls submitted yet.
-                                          </p>
-                                        ) : (
-                                          rolls.map((roll) => {
-                                            const presentCount =
-                                              roll.entries.filter(
-                                                (e) => e.present,
-                                              ).length;
-                                            const studentMap =
-                                              getStudentUsers().reduce<
-                                                Record<string, string>
-                                              >((acc, s) => {
-                                                acc[s.username.toLowerCase()] =
-                                                  s.name;
-                                                return acc;
-                                              }, {});
-                                            return (
-                                              <RollHistoryItem
-                                                key={roll.id}
-                                                roll={roll}
-                                                presentCount={presentCount}
-                                                studentMap={studentMap}
-                                              />
-                                            );
-                                          })
-                                        )}
-                                      </div>
-                                    );
-                                  })()}
-                              </div>
-                            )}
-                          </CardContent>
-                        )}
-                      </Card>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Delete Class Confirmation Dialog */}
-          <Dialog
-            open={deleteClassConfirm !== null}
-            onOpenChange={(o) => !o && setDeleteClassConfirm(null)}
-          >
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Delete Class</DialogTitle>
-              </DialogHeader>
-              <p className="text-sm text-muted-foreground">
-                Are you sure you want to delete this class? All enrolled
-                students will be removed.
-              </p>
-              <DialogFooter>
-                <Button
-                  data-ocid="teacher.classes.delete.cancel_button"
-                  variant="outline"
-                  onClick={() => setDeleteClassConfirm(null)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  data-ocid="teacher.classes.delete.confirm_button"
-                  variant="destructive"
-                  onClick={() =>
-                    deleteClassConfirm && handleDeleteClass(deleteClassConfirm)
-                  }
-                >
-                  Delete
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* Create Class Dialog */}
-          <Dialog open={createClassOpen} onOpenChange={setCreateClassOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create a New Class</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-2">
-                <div>
-                  <Label
-                    htmlFor="new-class-name"
-                    className="text-sm font-medium"
-                  >
-                    Class Name
-                  </Label>
-                  <Input
-                    data-ocid="teacher.classes.name.input"
-                    id="new-class-name"
-                    placeholder="e.g. Year 8 Maths Group A"
-                    value={newClassName}
-                    onChange={(e) => setNewClassName(e.target.value)}
-                    className="mt-1.5"
-                  />
-                </div>
-                <div>
-                  <Label
-                    htmlFor="new-class-subject"
-                    className="text-sm font-medium"
-                  >
-                    Subject
-                  </Label>
-                  <Input
-                    data-ocid="teacher.classes.subject.input"
-                    id="new-class-subject"
-                    placeholder="e.g. Mathematics"
-                    value={newClassSubject}
-                    onChange={(e) => setNewClassSubject(e.target.value)}
-                    className="mt-1.5"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  data-ocid="teacher.classes.create.cancel_button"
-                  variant="outline"
-                  onClick={() => {
-                    setCreateClassOpen(false);
-                    setNewClassName("");
-                    setNewClassSubject("");
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  data-ocid="teacher.classes.create.submit_button"
-                  className="bg-teacher hover:bg-teacher/90 text-white"
-                  onClick={handleCreateClass}
-                  disabled={!newClassName.trim() || !newClassSubject.trim()}
-                >
-                  Create Class
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </section>
-
-        {/* Quiz & Test Builder */}
-        <section className="mb-8">
-          <button
-            type="button"
-            data-ocid="teacher.quiz.section.toggle"
-            onClick={() => setQuizSectionOpen((o) => !o)}
-            className="flex items-center gap-2 w-full mb-4 group"
-          >
-            <ClipboardCheck className="w-5 h-5 text-teacher" />
-            <h2 className="font-display text-xl font-bold text-foreground">
-              Quiz &amp; Test Builder
-            </h2>
-            {quizSectionOpen ? (
-              <ChevronUp className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
-            )}
-          </button>
-
-          {quizSectionOpen && (
-            <div className="space-y-3">
-              <Button
-                data-ocid="teacher.quiz.create.button"
-                onClick={() => {
-                  setEditingQuiz(null);
-                  setQuizBuilderOpen(true);
-                }}
-                className="bg-teacher hover:bg-teacher/90 text-white gap-2"
-                size="sm"
-              >
-                <Plus className="w-4 h-4" />
-                Create Quiz / Test
-              </Button>
-
-              {quizzes.length === 0 ? (
-                <div
-                  data-ocid="teacher.quiz.empty_state"
-                  className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
-                >
-                  <ClipboardCheck className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
-                  <p className="text-sm font-medium text-muted-foreground">
-                    No quizzes or tests created yet.
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Create your first quiz or test above.
-                  </p>
-                </div>
-              ) : (
-                <div
-                  data-ocid="teacher.quiz.list"
-                  className="grid grid-cols-1 sm:grid-cols-2 gap-3"
-                >
-                  {quizzes.map((quiz, i) => {
-                    const assignmentCount = getQuizAssignments().filter(
-                      (a) => a.quizId === quiz.id,
-                    ).length;
-                    const submissionCount = getSubmissionsForQuiz(
-                      quiz.id,
-                    ).length;
-                    return (
-                      <div
-                        key={quiz.id}
-                        data-ocid={`teacher.quiz.item.${i + 1}`}
-                        className="bg-card border border-border/60 rounded-xl p-4 flex flex-col gap-3"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="font-semibold text-sm text-foreground leading-snug">
-                              {quiz.title}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {quiz.subject} · {quiz.gradeLevel}
-                            </p>
-                          </div>
-                          <Badge
-                            variant="outline"
-                            className={`text-xs flex-shrink-0 ${quiz.type === "test" ? "bg-purple-50 text-purple-700 border-purple-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}
-                          >
-                            {quiz.type === "test" ? "Test" : "Quiz"}
-                          </Badge>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          <Badge variant="outline" className="text-[10px]">
-                            {quiz.questions.length} questions
-                          </Badge>
-                          <Badge variant="outline" className="text-[10px]">
-                            {assignmentCount} assigned
-                          </Badge>
-                          <Badge variant="outline" className="text-[10px]">
-                            {submissionCount} submissions
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-1 mt-auto">
-                          <Button
-                            data-ocid={`teacher.quiz.edit_button.${i + 1}`}
-                            size="sm"
-                            variant="outline"
-                            className="gap-1.5 flex-1 text-xs h-8 border-teacher/30 text-teacher hover:bg-teacher-light"
-                            onClick={() => {
-                              setEditingQuiz(quiz);
-                              setQuizBuilderOpen(true);
-                            }}
-                          >
-                            <Pencil className="w-3 h-3" />
-                            Edit
-                          </Button>
-                          <Button
-                            data-ocid={`teacher.quiz.secondary_button.${i + 1}`}
-                            size="sm"
-                            variant="outline"
-                            className="gap-1.5 flex-1 text-xs h-8"
-                            onClick={() => setQuizResultsQuiz(quiz)}
-                          >
-                            <BarChart2 className="w-3 h-3" />
-                            Results
-                          </Button>
-                          <Button
-                            data-ocid={`teacher.quiz.delete_button.${i + 1}`}
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => handleDeleteQuiz(quiz.id)}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-        </section>
-
-        {/* My Classes — empty state */}
-        <section className="mb-8">
-          <h2 className="font-display text-xl font-bold text-foreground mb-4">
-            My Classes
-          </h2>
-          <div
-            data-ocid="dashboard.subjects.list"
-            className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
-          >
-            <BookOpen className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
-            <p className="text-sm font-medium text-muted-foreground">
-              No classes added yet.
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Your classes will appear here once you are assigned to them.
-            </p>
-          </div>
-        </section>
-
-        {/* Assignments */}
-        <section className="mb-8">
-          <h2 className="font-display text-xl font-bold text-foreground mb-4">
-            Assignments
-          </h2>
-          {assignments.length === 0 ? (
-            <div
-              data-ocid="dashboard.assignments.list"
-              className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
-            >
-              <ClipboardList className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
-              <p className="text-sm font-medium text-muted-foreground">
-                No assignments created yet.
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Use "Create Assignment" above to add your first assignment.
-              </p>
-            </div>
-          ) : (
-            <div
-              data-ocid="dashboard.assignments.list"
-              className="bg-card rounded-xl border border-border/60 shadow-xs divide-y divide-border/60"
-            >
-              {assignments.map((a, i) => (
-                <div
-                  key={a.id}
-                  data-ocid={`dashboard.assignments.item.${i + 1}`}
-                  className="flex items-center justify-between px-4 py-3.5 gap-4"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-7 h-7 rounded-lg bg-teacher-light flex items-center justify-center flex-shrink-0">
-                      <ClipboardList className="w-3.5 h-3.5 text-teacher" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {a.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {a.subject}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 flex-shrink-0 text-right">
-                    <div className="hidden sm:block">
-                      <p className="text-xs text-muted-foreground">
-                        Due {a.due}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground sm:hidden">
-                      <Clock className="w-3 h-3" />
-                      {a.due}
-                    </div>
-                    <Button
-                      data-ocid={`dashboard.assignments.delete_button.${i + 1}`}
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      onClick={() => handleDeleteAssignment(a.id)}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Incoming Call Bookings */}
-        <section className="mb-8">
-          <h2 className="font-display text-xl font-bold text-foreground mb-4">
-            Student Call Bookings
-          </h2>
-
-          {/* Pending */}
-          {pendingBookings.length === 0 ? (
-            <div
-              data-ocid="bookings.pending.empty_state"
-              className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center mb-4"
-            >
-              <Video className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
-              <p className="text-sm font-medium text-muted-foreground">
-                No pending bookings.
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                When a student books a call with you, it will appear here.
-              </p>
-            </div>
-          ) : (
-            <div
-              data-ocid="bookings.pending.list"
-              className="bg-card rounded-xl border border-border/60 shadow-xs divide-y divide-border/60 mb-4"
-            >
-              {pendingBookings.map((b, i) => (
-                <div
-                  key={b.id}
-                  data-ocid={`bookings.pending.item.${i + 1}`}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3.5 gap-3"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-student-light flex items-center justify-center flex-shrink-0">
-                      {b.callType === "Video" ? (
-                        <Video className="w-4 h-4 text-student" />
-                      ) : (
-                        <Phone className="w-4 h-4 text-student" />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {b.studentName} — {b.assignmentTitle}
-                      </p>
-                      <p className="text-xs text-teacher font-medium mt-0.5">
-                        {b.date} at {b.time}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 flex-shrink-0 pl-11 sm:pl-0">
-                    <Badge
-                      variant="outline"
-                      className="text-xs bg-amber-50 text-amber-700 border-amber-200"
-                    >
-                      Pending
-                    </Badge>
-                    <Button
-                      data-ocid={`bookings.grade.button.${i + 1}`}
-                      size="sm"
-                      className="bg-teacher hover:bg-teacher/90 text-white gap-1.5"
-                      onClick={() => openGradeDialog(b)}
-                    >
-                      <GraduationCap className="w-3.5 h-3.5" />
-                      Give Grade
-                    </Button>
-                    <Button
-                      data-ocid={`bookings.chat.button.${i + 1}`}
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setActiveChatBookingId(b.id);
-                        markChatRead(b.id, "teacher");
-                        setUnreadCounts((prev) => ({ ...prev, [b.id]: 0 }));
-                      }}
-                      className="gap-1.5 relative"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      Chat
-                      {(unreadCounts[b.id] ?? 0) > 0 && (
-                        <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5 leading-none">
-                          {unreadCounts[b.id]}
-                        </span>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Completed */}
-          {completedBookings.length > 0 && (
-            <div
-              data-ocid="bookings.completed.list"
-              className="bg-card rounded-xl border border-border/60 shadow-xs divide-y divide-border/60"
-            >
-              <p className="px-4 pt-3 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Completed
-              </p>
-              {completedBookings.map((b, i) => (
-                <div
-                  key={b.id}
-                  data-ocid={`bookings.completed.item.${i + 1}`}
-                  className="flex items-center justify-between px-4 py-3 gap-3"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {b.studentName} — {b.assignmentTitle}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {b.date} at {b.time}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <Badge
-                      variant="outline"
-                      className="text-xs bg-green-50 text-green-700 border-green-200 flex-shrink-0"
-                    >
-                      Graded
-                    </Badge>
-                    <Button
-                      data-ocid={`bookings.completed.chat.button.${i + 1}`}
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setActiveChatBookingId(b.id);
-                        markChatRead(b.id, "teacher");
-                        setUnreadCounts((prev) => ({ ...prev, [b.id]: 0 }));
-                      }}
-                      className="gap-1.5 relative"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      Chat
-                      {(unreadCounts[b.id] ?? 0) > 0 && (
-                        <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5 leading-none">
-                          {unreadCounts[b.id]}
-                        </span>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Parent Messages (direct teacher-parent chat) */}
-        <section className="mb-8">
-          <button
-            type="button"
-            data-ocid="teacher.parent_messages.toggle"
-            onClick={() => {
-              setParentMsgOpen((o) => !o);
-              closeTpChat();
-            }}
-            className="flex items-center gap-2 w-full mb-4 group"
-          >
-            <MessageSquare className="w-5 h-5 text-teacher" />
-            <h2 className="font-display text-xl font-bold text-foreground">
-              Parent Messages
-            </h2>
-            {parentMsgOpen ? (
-              <ChevronUp className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
-            )}
-          </button>
-
-          {parentMsgOpen &&
-            (() => {
-              // Get unique students from bookings
-              const studentMap = new Map<string, string>();
-              for (const b of bookings) {
-                if (!studentMap.has(b.studentUsername)) {
-                  studentMap.set(b.studentUsername, b.studentName);
-                }
-              }
-              const students = Array.from(studentMap.entries());
-
-              return students.length === 0 ? (
-                <div
-                  data-ocid="teacher.parent_messages.empty_state"
-                  className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
-                >
-                  <MessageSquare className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
-                  <p className="text-sm font-medium text-muted-foreground">
-                    No parent chats yet.
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Chats appear once students have booked sessions and parents
-                    are linked.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {students.map(([studentUsername, studentName], i) => {
-                    const name = teacherName || getTeacherName();
-                    const channel = `tp:${name}:${studentUsername}`;
-                    const isActive = activeTpChannel === channel;
-                    return (
-                      <div
-                        key={studentUsername}
-                        data-ocid={`teacher.parent_messages.item.${i + 1}`}
-                        className="bg-card rounded-xl border border-border/60 shadow-xs overflow-hidden"
-                      >
-                        <div className="flex items-center justify-between px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-parent-light flex items-center justify-center">
-                              <Users className="w-4 h-4 text-parent" />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-foreground">
-                                Parent of {studentName}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {studentUsername}
-                              </p>
-                            </div>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant={isActive ? "default" : "outline"}
-                            className={
-                              isActive
-                                ? "bg-teacher hover:bg-teacher/90 text-white gap-1.5"
-                                : "gap-1.5 text-xs border-teacher/30 text-teacher hover:bg-teacher-light"
-                            }
-                            onClick={() => {
-                              if (isActive) {
-                                closeTpChat();
-                              } else {
-                                openTpChat(studentUsername);
-                              }
-                            }}
-                          >
-                            <MessageSquare className="w-3.5 h-3.5" />
-                            {isActive ? "Close Chat" : "Chat"}
-                          </Button>
-                        </div>
-
-                        {isActive && (
-                          <div className="border-t border-border/40 p-4">
-                            <div
-                              className="h-48 overflow-y-auto mb-3 space-y-2 bg-background rounded-lg p-3 border border-border/40"
-                              style={{ scrollbarWidth: "thin" }}
-                            >
-                              {tpMessages.length === 0 ? (
-                                <p className="text-xs text-muted-foreground text-center py-6">
-                                  No messages yet. Start the conversation!
-                                </p>
-                              ) : (
-                                tpMessages.map((msg) => (
-                                  <div
-                                    key={msg.id}
-                                    className={`flex ${msg.senderRole === "teacher" ? "justify-end" : "justify-start"}`}
-                                  >
-                                    <div
-                                      className={`max-w-[75%] px-3 py-1.5 rounded-xl text-xs ${msg.senderRole === "teacher" ? "bg-teacher text-white rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm"}`}
-                                    >
-                                      <p className="font-semibold mb-0.5 opacity-75">
-                                        {msg.senderName}
-                                      </p>
-                                      <p>{msg.text}</p>
-                                      <p className="text-[10px] mt-0.5 opacity-60">
-                                        {new Date(
-                                          msg.sentAt,
-                                        ).toLocaleTimeString([], {
-                                          hour: "2-digit",
-                                          minute: "2-digit",
-                                        })}
-                                      </p>
+                                            : openRollCall(
+                                                cls.id,
+                                                cls.studentUsernames,
+                                              )
+                                        }
+                                      >
+                                        {rollCallOpen[cls.id]
+                                          ? "Close"
+                                          : "Take Roll"}
+                                      </Button>
                                     </div>
+                                    {rollCallOpen[cls.id] && (
+                                      <div className="space-y-2">
+                                        {cls.studentUsernames.map((uname) => {
+                                          const isPresent =
+                                            rollEntries[cls.id]?.[uname] ??
+                                            true;
+                                          const stu = allStudents.find(
+                                            (s) =>
+                                              s.username.toLowerCase() ===
+                                              uname.toLowerCase(),
+                                          );
+                                          return (
+                                            <div
+                                              key={uname}
+                                              className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-1.5"
+                                            >
+                                              <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-full bg-teacher-light flex items-center justify-center">
+                                                  <User className="w-3 h-3 text-teacher" />
+                                                </div>
+                                                <span
+                                                  className={`w-2 h-2 rounded-full ${
+                                                    isStudentOnline(uname)
+                                                      ? "bg-green-500"
+                                                      : "bg-gray-400"
+                                                  }`}
+                                                />
+                                                <span className="text-sm font-medium">
+                                                  {stu ? stu.name : uname}
+                                                </span>
+                                                <span
+                                                  className={`text-xs ${
+                                                    isStudentOnline(uname)
+                                                      ? "text-green-600"
+                                                      : "text-gray-400"
+                                                  }`}
+                                                >
+                                                  {isStudentOnline(uname)
+                                                    ? "Online"
+                                                    : "Offline"}
+                                                </span>
+                                              </div>
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  toggleRollEntry(cls.id, uname)
+                                                }
+                                                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                                                  isPresent
+                                                    ? "bg-green-100 text-green-700 hover:bg-green-200"
+                                                    : "bg-red-100 text-red-700 hover:bg-red-200"
+                                                }`}
+                                              >
+                                                {isPresent
+                                                  ? "✓ Present"
+                                                  : "✗ Absent"}
+                                              </button>
+                                            </div>
+                                          );
+                                        })}
+                                        <Button
+                                          size="sm"
+                                          className="w-full bg-teacher hover:bg-teacher/90 text-white text-xs mt-2"
+                                          onClick={() => submitRoll(cls)}
+                                        >
+                                          Submit Roll Call
+                                        </Button>
+                                      </div>
+                                    )}
+
+                                    {/* Past Roll Calls */}
+                                    {rollHistoryOpen[cls.id] &&
+                                      (() => {
+                                        const rolls = getRollCallsForClass(
+                                          cls.id,
+                                        );
+                                        return (
+                                          <div className="mt-3 border-t border-border/40 pt-3 space-y-2">
+                                            <div className="flex items-center justify-between mb-1">
+                                              <span className="text-xs font-semibold text-foreground flex items-center gap-1">
+                                                <ClipboardCheck className="w-3.5 h-3.5 text-teacher" />
+                                                Roll History
+                                              </span>
+                                              <button
+                                                type="button"
+                                                className="text-xs text-muted-foreground hover:text-foreground underline"
+                                                onClick={() =>
+                                                  setRollHistoryOpen(
+                                                    (prev) => ({
+                                                      ...prev,
+                                                      [cls.id]: false,
+                                                    }),
+                                                  )
+                                                }
+                                              >
+                                                Hide
+                                              </button>
+                                            </div>
+                                            {rolls.length === 0 ? (
+                                              <p className="text-xs text-muted-foreground italic">
+                                                No rolls submitted yet.
+                                              </p>
+                                            ) : (
+                                              rolls.map((roll) => {
+                                                const presentCount =
+                                                  roll.entries.filter(
+                                                    (e) => e.present,
+                                                  ).length;
+                                                const studentMap =
+                                                  getStudentUsers().reduce<
+                                                    Record<string, string>
+                                                  >((acc, s) => {
+                                                    acc[
+                                                      s.username.toLowerCase()
+                                                    ] = s.name;
+                                                    return acc;
+                                                  }, {});
+                                                return (
+                                                  <RollHistoryItem
+                                                    key={roll.id}
+                                                    roll={roll}
+                                                    presentCount={presentCount}
+                                                    studentMap={studentMap}
+                                                  />
+                                                );
+                                              })
+                                            )}
+                                          </div>
+                                        );
+                                      })()}
                                   </div>
-                                ))
-                              )}
-                            </div>
-                            <div className="flex gap-2">
-                              <input
-                                data-ocid="teacher.parent_messages.input"
-                                type="text"
-                                value={tpInput}
-                                onChange={(e) => setTpInput(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter" && !e.shiftKey) {
-                                    e.preventDefault();
-                                    sendTpMsg();
-                                  }
-                                }}
-                                placeholder="Type a message..."
-                                className="flex-1 h-8 text-xs px-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-teacher/50"
-                              />
-                              <Button
-                                data-ocid="teacher.parent_messages.button"
-                                size="sm"
-                                className="h-8 bg-teacher hover:bg-teacher/90 text-white gap-1"
-                                onClick={sendTpMsg}
+                                )}
+                              </CardContent>
+                            )}
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Delete Class Confirmation Dialog */}
+              <Dialog
+                open={deleteClassConfirm !== null}
+                onOpenChange={(o) => !o && setDeleteClassConfirm(null)}
+              >
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Delete Class</DialogTitle>
+                  </DialogHeader>
+                  <p className="text-sm text-muted-foreground">
+                    Are you sure you want to delete this class? All enrolled
+                    students will be removed.
+                  </p>
+                  <DialogFooter>
+                    <Button
+                      data-ocid="teacher.classes.delete.cancel_button"
+                      variant="outline"
+                      onClick={() => setDeleteClassConfirm(null)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      data-ocid="teacher.classes.delete.confirm_button"
+                      variant="destructive"
+                      onClick={() =>
+                        deleteClassConfirm &&
+                        handleDeleteClass(deleteClassConfirm)
+                      }
+                    >
+                      Delete
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* Create Class Dialog */}
+              <Dialog open={createClassOpen} onOpenChange={setCreateClassOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create a New Class</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-2">
+                    <div>
+                      <Label
+                        htmlFor="new-class-name"
+                        className="text-sm font-medium"
+                      >
+                        Class Name
+                      </Label>
+                      <Input
+                        data-ocid="teacher.classes.name.input"
+                        id="new-class-name"
+                        placeholder="e.g. Year 8 Maths Group A"
+                        value={newClassName}
+                        onChange={(e) => setNewClassName(e.target.value)}
+                        className="mt-1.5"
+                      />
+                    </div>
+                    <div>
+                      <Label
+                        htmlFor="new-class-subject"
+                        className="text-sm font-medium"
+                      >
+                        Subject
+                      </Label>
+                      <Input
+                        data-ocid="teacher.classes.subject.input"
+                        id="new-class-subject"
+                        placeholder="e.g. Mathematics"
+                        value={newClassSubject}
+                        onChange={(e) => setNewClassSubject(e.target.value)}
+                        className="mt-1.5"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      data-ocid="teacher.classes.create.cancel_button"
+                      variant="outline"
+                      onClick={() => {
+                        setCreateClassOpen(false);
+                        setNewClassName("");
+                        setNewClassSubject("");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      data-ocid="teacher.classes.create.submit_button"
+                      className="bg-teacher hover:bg-teacher/90 text-white"
+                      onClick={handleCreateClass}
+                      disabled={!newClassName.trim() || !newClassSubject.trim()}
+                    >
+                      Create Class
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </section>
+
+            {/* Quiz & Test Builder */}
+            <section className="mb-8">
+              <button
+                type="button"
+                data-ocid="teacher.quiz.section.toggle"
+                onClick={() => setQuizSectionOpen((o) => !o)}
+                className="flex items-center gap-2 w-full mb-4 group"
+              >
+                <ClipboardCheck className="w-5 h-5 text-teacher" />
+                <h2 className="font-display text-xl font-bold text-foreground">
+                  Quiz &amp; Test Builder
+                </h2>
+                {quizSectionOpen ? (
+                  <ChevronUp className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
+                )}
+              </button>
+
+              {quizSectionOpen && (
+                <div className="space-y-3">
+                  <Button
+                    data-ocid="teacher.quiz.create.button"
+                    onClick={() => {
+                      setEditingQuiz(null);
+                      setQuizBuilderOpen(true);
+                    }}
+                    className="bg-teacher hover:bg-teacher/90 text-white gap-2"
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create Quiz / Test
+                  </Button>
+
+                  {quizzes.length === 0 ? (
+                    <div
+                      data-ocid="teacher.quiz.empty_state"
+                      className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
+                    >
+                      <ClipboardCheck className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+                      <p className="text-sm font-medium text-muted-foreground">
+                        No quizzes or tests created yet.
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Create your first quiz or test above.
+                      </p>
+                    </div>
+                  ) : (
+                    <div
+                      data-ocid="teacher.quiz.list"
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+                    >
+                      {quizzes.map((quiz, i) => {
+                        const assignmentCount = getQuizAssignments().filter(
+                          (a) => a.quizId === quiz.id,
+                        ).length;
+                        const submissionCount = getSubmissionsForQuiz(
+                          quiz.id,
+                        ).length;
+                        return (
+                          <div
+                            key={quiz.id}
+                            data-ocid={`teacher.quiz.item.${i + 1}`}
+                            className="bg-card border border-border/60 rounded-xl p-4 flex flex-col gap-3"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="font-semibold text-sm text-foreground leading-snug">
+                                  {quiz.title}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {quiz.subject} · {quiz.gradeLevel}
+                                </p>
+                              </div>
+                              <Badge
+                                variant="outline"
+                                className={`text-xs flex-shrink-0 ${quiz.type === "test" ? "bg-purple-50 text-purple-700 border-purple-200" : "bg-blue-50 text-blue-700 border-blue-200"}`}
                               >
-                                <Send className="w-3 h-3" />
-                                Send
+                                {quiz.type === "test" ? "Test" : "Quiz"}
+                              </Badge>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              <Badge variant="outline" className="text-[10px]">
+                                {quiz.questions.length} questions
+                              </Badge>
+                              <Badge variant="outline" className="text-[10px]">
+                                {assignmentCount} assigned
+                              </Badge>
+                              <Badge variant="outline" className="text-[10px]">
+                                {submissionCount} submissions
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-1 mt-auto">
+                              <Button
+                                data-ocid={`teacher.quiz.edit_button.${i + 1}`}
+                                size="sm"
+                                variant="outline"
+                                className="gap-1.5 flex-1 text-xs h-8 border-teacher/30 text-teacher hover:bg-teacher-light"
+                                onClick={() => {
+                                  setEditingQuiz(quiz);
+                                  setQuizBuilderOpen(true);
+                                }}
+                              >
+                                <Pencil className="w-3 h-3" />
+                                Edit
+                              </Button>
+                              <Button
+                                data-ocid={`teacher.quiz.secondary_button.${i + 1}`}
+                                size="sm"
+                                variant="outline"
+                                className="gap-1.5 flex-1 text-xs h-8"
+                                onClick={() => setQuizResultsQuiz(quiz)}
+                              >
+                                <BarChart2 className="w-3 h-3" />
+                                Results
+                              </Button>
+                              <Button
+                                data-ocid={`teacher.quiz.delete_button.${i + 1}`}
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                onClick={() => handleDeleteQuiz(quiz.id)}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
                               </Button>
                             </div>
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              );
-            })()}
-        </section>
+              )}
+            </section>
+
+            {/* My Classes — empty state */}
+            <section className="mb-8">
+              <h2 className="font-display text-xl font-bold text-foreground mb-4">
+                My Classes
+              </h2>
+              <div
+                data-ocid="dashboard.subjects.list"
+                className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
+              >
+                <BookOpen className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+                <p className="text-sm font-medium text-muted-foreground">
+                  No classes added yet.
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Your classes will appear here once you are assigned to them.
+                </p>
+              </div>
+            </section>
+
+            {/* Assignments */}
+            <section className="mb-8">
+              <h2 className="font-display text-xl font-bold text-foreground mb-4">
+                Assignments
+              </h2>
+              {assignments.length === 0 ? (
+                <div
+                  data-ocid="dashboard.assignments.list"
+                  className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
+                >
+                  <ClipboardList className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+                  <p className="text-sm font-medium text-muted-foreground">
+                    No assignments created yet.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Use "Create Assignment" above to add your first assignment.
+                  </p>
+                </div>
+              ) : (
+                <div
+                  data-ocid="dashboard.assignments.list"
+                  className="bg-card rounded-xl border border-border/60 shadow-xs divide-y divide-border/60"
+                >
+                  {assignments.map((a, i) => (
+                    <div
+                      key={a.id}
+                      data-ocid={`dashboard.assignments.item.${i + 1}`}
+                      className="flex items-center justify-between px-4 py-3.5 gap-4"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-7 h-7 rounded-lg bg-teacher-light flex items-center justify-center flex-shrink-0">
+                          <ClipboardList className="w-3.5 h-3.5 text-teacher" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">
+                            {a.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {a.subject}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0 text-right">
+                        <div className="hidden sm:block">
+                          <p className="text-xs text-muted-foreground">
+                            Due {a.due}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground sm:hidden">
+                          <Clock className="w-3 h-3" />
+                          {a.due}
+                        </div>
+                        <Button
+                          data-ocid={`dashboard.assignments.delete_button.${i + 1}`}
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleDeleteAssignment(a.id)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Incoming Call Bookings */}
+            <section className="mb-8">
+              <h2 className="font-display text-xl font-bold text-foreground mb-4">
+                Student Call Bookings
+              </h2>
+
+              {/* Pending */}
+              {pendingBookings.length === 0 ? (
+                <div
+                  data-ocid="bookings.pending.empty_state"
+                  className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center mb-4"
+                >
+                  <Video className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+                  <p className="text-sm font-medium text-muted-foreground">
+                    No pending bookings.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    When a student books a call with you, it will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div
+                  data-ocid="bookings.pending.list"
+                  className="bg-card rounded-xl border border-border/60 shadow-xs divide-y divide-border/60 mb-4"
+                >
+                  {pendingBookings.map((b, i) => (
+                    <div
+                      key={b.id}
+                      data-ocid={`bookings.pending.item.${i + 1}`}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3.5 gap-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-student-light flex items-center justify-center flex-shrink-0">
+                          {b.callType === "Video" ? (
+                            <Video className="w-4 h-4 text-student" />
+                          ) : (
+                            <Phone className="w-4 h-4 text-student" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">
+                            {b.studentName} — {b.assignmentTitle}
+                          </p>
+                          <p className="text-xs text-teacher font-medium mt-0.5">
+                            {b.date} at {b.time}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0 pl-11 sm:pl-0">
+                        <Badge
+                          variant="outline"
+                          className="text-xs bg-amber-50 text-amber-700 border-amber-200"
+                        >
+                          Pending
+                        </Badge>
+                        <Button
+                          data-ocid={`bookings.grade.button.${i + 1}`}
+                          size="sm"
+                          className="bg-teacher hover:bg-teacher/90 text-white gap-1.5"
+                          onClick={() => openGradeDialog(b)}
+                        >
+                          <GraduationCap className="w-3.5 h-3.5" />
+                          Give Grade
+                        </Button>
+                        <Button
+                          data-ocid={`bookings.chat.button.${i + 1}`}
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setActiveChatBookingId(b.id);
+                            markChatRead(b.id, "teacher");
+                            setUnreadCounts((prev) => ({ ...prev, [b.id]: 0 }));
+                          }}
+                          className="gap-1.5 relative"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          Chat
+                          {(unreadCounts[b.id] ?? 0) > 0 && (
+                            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5 leading-none">
+                              {unreadCounts[b.id]}
+                            </span>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Completed */}
+              {completedBookings.length > 0 && (
+                <div
+                  data-ocid="bookings.completed.list"
+                  className="bg-card rounded-xl border border-border/60 shadow-xs divide-y divide-border/60"
+                >
+                  <p className="px-4 pt-3 pb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Completed
+                  </p>
+                  {completedBookings.map((b, i) => (
+                    <div
+                      key={b.id}
+                      data-ocid={`bookings.completed.item.${i + 1}`}
+                      className="flex items-center justify-between px-4 py-3 gap-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">
+                            {b.studentName} — {b.assignmentTitle}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {b.date} at {b.time}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Badge
+                          variant="outline"
+                          className="text-xs bg-green-50 text-green-700 border-green-200 flex-shrink-0"
+                        >
+                          Graded
+                        </Badge>
+                        <Button
+                          data-ocid={`bookings.completed.chat.button.${i + 1}`}
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setActiveChatBookingId(b.id);
+                            markChatRead(b.id, "teacher");
+                            setUnreadCounts((prev) => ({ ...prev, [b.id]: 0 }));
+                          }}
+                          className="gap-1.5 relative"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          Chat
+                          {(unreadCounts[b.id] ?? 0) > 0 && (
+                            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-0.5 leading-none">
+                              {unreadCounts[b.id]}
+                            </span>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* Parent Messages (direct teacher-parent chat) */}
+            <section className="mb-8">
+              <button
+                type="button"
+                data-ocid="teacher.parent_messages.toggle"
+                onClick={() => {
+                  setParentMsgOpen((o) => !o);
+                  closeTpChat();
+                }}
+                className="flex items-center gap-2 w-full mb-4 group"
+              >
+                <MessageSquare className="w-5 h-5 text-teacher" />
+                <h2 className="font-display text-xl font-bold text-foreground">
+                  Parent Messages
+                </h2>
+                {parentMsgOpen ? (
+                  <ChevronUp className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" />
+                )}
+              </button>
+
+              {parentMsgOpen &&
+                (() => {
+                  // Get unique students from bookings
+                  const studentMap = new Map<string, string>();
+                  for (const b of bookings) {
+                    if (!studentMap.has(b.studentUsername)) {
+                      studentMap.set(b.studentUsername, b.studentName);
+                    }
+                  }
+                  const students = Array.from(studentMap.entries());
+
+                  return students.length === 0 ? (
+                    <div
+                      data-ocid="teacher.parent_messages.empty_state"
+                      className="bg-card rounded-xl border border-border/60 shadow-xs p-8 text-center"
+                    >
+                      <MessageSquare className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+                      <p className="text-sm font-medium text-muted-foreground">
+                        No parent chats yet.
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Chats appear once students have booked sessions and
+                        parents are linked.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {students.map(([studentUsername, studentName], i) => {
+                        const name = teacherName || getTeacherName();
+                        const channel = `tp:${name}:${studentUsername}`;
+                        const isActive = activeTpChannel === channel;
+                        return (
+                          <div
+                            key={studentUsername}
+                            data-ocid={`teacher.parent_messages.item.${i + 1}`}
+                            className="bg-card rounded-xl border border-border/60 shadow-xs overflow-hidden"
+                          >
+                            <div className="flex items-center justify-between px-4 py-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-parent-light flex items-center justify-center">
+                                  <Users className="w-4 h-4 text-parent" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-foreground">
+                                    Parent of {studentName}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {studentUsername}
+                                  </p>
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant={isActive ? "default" : "outline"}
+                                className={
+                                  isActive
+                                    ? "bg-teacher hover:bg-teacher/90 text-white gap-1.5"
+                                    : "gap-1.5 text-xs border-teacher/30 text-teacher hover:bg-teacher-light"
+                                }
+                                onClick={() => {
+                                  if (isActive) {
+                                    closeTpChat();
+                                  } else {
+                                    openTpChat(studentUsername);
+                                  }
+                                }}
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                {isActive ? "Close Chat" : "Chat"}
+                              </Button>
+                            </div>
+
+                            {isActive && (
+                              <div className="border-t border-border/40 p-4">
+                                <div
+                                  className="h-48 overflow-y-auto mb-3 space-y-2 bg-background rounded-lg p-3 border border-border/40"
+                                  style={{ scrollbarWidth: "thin" }}
+                                >
+                                  {tpMessages.length === 0 ? (
+                                    <p className="text-xs text-muted-foreground text-center py-6">
+                                      No messages yet. Start the conversation!
+                                    </p>
+                                  ) : (
+                                    tpMessages.map((msg) => (
+                                      <div
+                                        key={msg.id}
+                                        className={`flex ${msg.senderRole === "teacher" ? "justify-end" : "justify-start"}`}
+                                      >
+                                        <div
+                                          className={`max-w-[75%] px-3 py-1.5 rounded-xl text-xs ${msg.senderRole === "teacher" ? "bg-teacher text-white rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm"}`}
+                                        >
+                                          <p className="font-semibold mb-0.5 opacity-75">
+                                            {msg.senderName}
+                                          </p>
+                                          <p>{msg.text}</p>
+                                          <p className="text-[10px] mt-0.5 opacity-60">
+                                            {new Date(
+                                              msg.sentAt,
+                                            ).toLocaleTimeString([], {
+                                              hour: "2-digit",
+                                              minute: "2-digit",
+                                            })}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    ))
+                                  )}
+                                </div>
+                                <div className="flex gap-2">
+                                  <input
+                                    data-ocid="teacher.parent_messages.input"
+                                    type="text"
+                                    value={tpInput}
+                                    onChange={(e) => setTpInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter" && !e.shiftKey) {
+                                        e.preventDefault();
+                                        sendTpMsg();
+                                      }
+                                    }}
+                                    placeholder="Type a message..."
+                                    className="flex-1 h-8 text-xs px-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-teacher/50"
+                                  />
+                                  <Button
+                                    data-ocid="teacher.parent_messages.button"
+                                    size="sm"
+                                    className="h-8 bg-teacher hover:bg-teacher/90 text-white gap-1"
+                                    onClick={sendTpMsg}
+                                  >
+                                    <Send className="w-3 h-3" />
+                                    Send
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+            </section>
+          </>
+        )}
       </main>
 
       {/* Create Assignment Dialog */}
