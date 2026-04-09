@@ -33,6 +33,7 @@ export interface SubjectCategory {
   name: string;
   emoji: string;
   subjects: string[];
+  ageMin: number;
 }
 
 export const SUBJECT_CATEGORIES: SubjectCategory[] = [
@@ -40,6 +41,7 @@ export const SUBJECT_CATEGORIES: SubjectCategory[] = [
     id: "core",
     name: "Core Academic",
     emoji: "🧠",
+    ageMin: 5,
     subjects: [
       "English / Primary Language",
       "Mathematics",
@@ -62,6 +64,7 @@ export const SUBJECT_CATEGORIES: SubjectCategory[] = [
     id: "tech",
     name: "Technology & Digital Skills",
     emoji: "💻",
+    ageMin: 6,
     subjects: [
       "Computer Basics",
       "Typing Skills",
@@ -77,6 +80,7 @@ export const SUBJECT_CATEGORIES: SubjectCategory[] = [
     id: "arts",
     name: "Arts & Creativity",
     emoji: "🎨",
+    ageMin: 5,
     subjects: [
       "Drawing",
       "Music",
@@ -91,12 +95,14 @@ export const SUBJECT_CATEGORIES: SubjectCategory[] = [
     id: "languages",
     name: "Languages",
     emoji: "🌍",
+    ageMin: 6,
     subjects: ["Hindi", "French", "Spanish", "German", "Sanskrit"],
   },
   {
     id: "lifeskills",
     name: "Life Skills & Personal Development",
     emoji: "🧬",
+    ageMin: 11,
     subjects: [
       "Communication Skills",
       "Critical Thinking",
@@ -110,6 +116,7 @@ export const SUBJECT_CATEGORIES: SubjectCategory[] = [
     id: "environment",
     name: "Environmental & Social Awareness",
     emoji: "🌱",
+    ageMin: 11,
     subjects: [
       "Environmental Studies",
       "Sustainability",
@@ -121,6 +128,7 @@ export const SUBJECT_CATEGORIES: SubjectCategory[] = [
     id: "practical",
     name: "Practical & Applied Subjects",
     emoji: "🔬",
+    ageMin: 11,
     subjects: [
       "STEM Projects",
       "Astronomy for Kids",
@@ -133,6 +141,7 @@ export const SUBJECT_CATEGORIES: SubjectCategory[] = [
     id: "modern",
     name: "Modern & Enrichment Subjects",
     emoji: "🎮",
+    ageMin: 14,
     subjects: [
       "Game Design",
       "Media Literacy",

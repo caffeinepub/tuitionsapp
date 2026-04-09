@@ -52,11 +52,19 @@ export interface backendInterface {
     createSubject(name: string, description: string, teacherPrincipal: string): Promise<string>;
     createVoiceSession(sessionId: string, hostUsername: string): Promise<void>;
     endVoiceSession(sessionId: string): Promise<void>;
+    fetchWordPressContent(baseUrl: string, endpoint: string): Promise<{
+        __kind__: "ok";
+        ok: string;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     getAllAssignments(): Promise<Array<Assignment>>;
     getAllSubjects(): Promise<Array<Subject>>;
     getGradesByStudent(studentId: string): Promise<Array<Grade>>;
     getStudentById(id: string): Promise<StudentProfile | null>;
     getStudentPublicByUsername(username: string): Promise<[string, string] | null>;
+    getTeacherWpUrl(): Promise<string>;
     getVoiceSession(sessionId: string): Promise<VoiceSession | null>;
     joinVoiceSession(sessionId: string, username: string): Promise<void>;
     listActiveVoiceSessions(): Promise<Array<VoiceSession>>;
@@ -76,6 +84,7 @@ export interface backendInterface {
         err: string;
     }>;
     sendAudioChunk(sessionId: string, senderUsername: string, data: Uint8Array): Promise<void>;
+    setTeacherWpUrl(url: string): Promise<void>;
     setVerificationCode(username: string, code: string): Promise<void>;
     studentExistsInBackend(username: string): Promise<boolean>;
     studentHasVerificationCode(username: string): Promise<boolean>;

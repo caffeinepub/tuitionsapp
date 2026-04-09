@@ -55,11 +55,17 @@ export interface _SERVICE {
   'createSubject' : ActorMethod<[string, string, string], string>,
   'createVoiceSession' : ActorMethod<[string, string], undefined>,
   'endVoiceSession' : ActorMethod<[string], undefined>,
+  'fetchWordPressContent' : ActorMethod<
+    [string, string],
+    { 'ok' : string } |
+      { 'err' : string }
+  >,
   'getAllAssignments' : ActorMethod<[], Array<Assignment>>,
   'getAllSubjects' : ActorMethod<[], Array<Subject>>,
   'getGradesByStudent' : ActorMethod<[string], Array<Grade>>,
   'getStudentById' : ActorMethod<[string], [] | [StudentProfile]>,
   'getStudentPublicByUsername' : ActorMethod<[string], [] | [[string, string]]>,
+  'getTeacherWpUrl' : ActorMethod<[], string>,
   'getVoiceSession' : ActorMethod<[string], [] | [VoiceSession]>,
   'joinVoiceSession' : ActorMethod<[string, string], undefined>,
   'listActiveVoiceSessions' : ActorMethod<[], Array<VoiceSession>>,
@@ -75,6 +81,7 @@ export interface _SERVICE {
       { 'err' : string }
   >,
   'sendAudioChunk' : ActorMethod<[string, string, Uint8Array], undefined>,
+  'setTeacherWpUrl' : ActorMethod<[string], undefined>,
   'setVerificationCode' : ActorMethod<[string, string], undefined>,
   'studentExistsInBackend' : ActorMethod<[string], boolean>,
   'studentHasVerificationCode' : ActorMethod<[string], boolean>,

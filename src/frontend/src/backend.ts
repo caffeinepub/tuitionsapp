@@ -134,11 +134,19 @@ export interface backendInterface {
     createSubject(name: string, description: string, teacherPrincipal: string): Promise<string>;
     createVoiceSession(sessionId: string, hostUsername: string): Promise<void>;
     endVoiceSession(sessionId: string): Promise<void>;
+    fetchWordPressContent(baseUrl: string, endpoint: string): Promise<{
+        __kind__: "ok";
+        ok: string;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     getAllAssignments(): Promise<Array<Assignment>>;
     getAllSubjects(): Promise<Array<Subject>>;
     getGradesByStudent(studentId: string): Promise<Array<Grade>>;
     getStudentById(id: string): Promise<StudentProfile | null>;
     getStudentPublicByUsername(username: string): Promise<[string, string] | null>;
+    getTeacherWpUrl(): Promise<string>;
     getVoiceSession(sessionId: string): Promise<VoiceSession | null>;
     joinVoiceSession(sessionId: string, username: string): Promise<void>;
     listActiveVoiceSessions(): Promise<Array<VoiceSession>>;
@@ -158,6 +166,7 @@ export interface backendInterface {
         err: string;
     }>;
     sendAudioChunk(sessionId: string, senderUsername: string, data: Uint8Array): Promise<void>;
+    setTeacherWpUrl(url: string): Promise<void>;
     setVerificationCode(username: string, code: string): Promise<void>;
     studentExistsInBackend(username: string): Promise<boolean>;
     studentHasVerificationCode(username: string): Promise<boolean>;
@@ -250,6 +259,26 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async fetchWordPressContent(arg0: string, arg1: string): Promise<{
+        __kind__: "ok";
+        ok: string;
+    } | {
+        __kind__: "err";
+        err: string;
+    }> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.fetchWordPressContent(arg0, arg1);
+                return from_candid_variant_n1(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.fetchWordPressContent(arg0, arg1);
+            return from_candid_variant_n1(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getAllAssignments(): Promise<Array<Assignment>> {
         if (this.processError) {
             try {
@@ -296,42 +325,56 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getStudentById(arg0);
-                return from_candid_opt_n1(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getStudentById(arg0);
-            return from_candid_opt_n1(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getStudentPublicByUsername(arg0: string): Promise<[string, string] | null> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getStudentPublicByUsername(arg0);
                 return from_candid_opt_n2(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getStudentPublicByUsername(arg0);
+            const result = await this.actor.getStudentById(arg0);
             return from_candid_opt_n2(this._uploadFile, this._downloadFile, result);
         }
     }
-    async getVoiceSession(arg0: string): Promise<VoiceSession | null> {
+    async getStudentPublicByUsername(arg0: string): Promise<[string, string] | null> {
         if (this.processError) {
             try {
-                const result = await this.actor.getVoiceSession(arg0);
+                const result = await this.actor.getStudentPublicByUsername(arg0);
                 return from_candid_opt_n3(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getVoiceSession(arg0);
+            const result = await this.actor.getStudentPublicByUsername(arg0);
             return from_candid_opt_n3(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getTeacherWpUrl(): Promise<string> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getTeacherWpUrl();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getTeacherWpUrl();
+            return result;
+        }
+    }
+    async getVoiceSession(arg0: string): Promise<VoiceSession | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getVoiceSession(arg0);
+                return from_candid_opt_n4(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getVoiceSession(arg0);
+            return from_candid_opt_n4(this._uploadFile, this._downloadFile, result);
         }
     }
     async joinVoiceSession(arg0: string, arg1: string): Promise<void> {
@@ -372,14 +415,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.loginStudent(arg0, arg1);
-                return from_candid_variant_n4(this._uploadFile, this._downloadFile, result);
+                return from_candid_variant_n5(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.loginStudent(arg0, arg1);
-            return from_candid_variant_n4(this._uploadFile, this._downloadFile, result);
+            return from_candid_variant_n5(this._uploadFile, this._downloadFile, result);
         }
     }
     async pollAudioChunks(arg0: string, arg1: bigint, arg2: string): Promise<Array<AudioChunk>> {
@@ -406,14 +449,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.registerStudent(arg0, arg1, arg2);
-                return from_candid_variant_n5(this._uploadFile, this._downloadFile, result);
+                return from_candid_variant_n1(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.registerStudent(arg0, arg1, arg2);
-            return from_candid_variant_n5(this._uploadFile, this._downloadFile, result);
+            return from_candid_variant_n1(this._uploadFile, this._downloadFile, result);
         }
     }
     async sendAudioChunk(arg0: string, arg1: string, arg2: Uint8Array): Promise<void> {
@@ -427,6 +470,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.sendAudioChunk(arg0, arg1, arg2);
+            return result;
+        }
+    }
+    async setTeacherWpUrl(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setTeacherWpUrl(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setTeacherWpUrl(arg0);
             return result;
         }
     }
@@ -487,22 +544,22 @@ export class Backend implements backendInterface {
         }
     }
 }
-function from_candid_opt_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_StudentProfile]): StudentProfile | null {
+function from_candid_opt_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_StudentProfile]): StudentProfile | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [[string, string]]): [string, string] | null {
+function from_candid_opt_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [[string, string]]): [string, string] | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_VoiceSession]): VoiceSession | null {
+function from_candid_opt_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_VoiceSession]): VoiceSession | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_variant_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    ok: _StudentProfile;
+function from_candid_variant_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    ok: string;
 } | {
     err: string;
 }): {
     __kind__: "ok";
-    ok: StudentProfile;
+    ok: string;
 } | {
     __kind__: "err";
     err: string;
@@ -516,12 +573,12 @@ function from_candid_variant_n4(_uploadFile: (file: ExternalBlob) => Promise<Uin
     } : value;
 }
 function from_candid_variant_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    ok: string;
+    ok: _StudentProfile;
 } | {
     err: string;
 }): {
     __kind__: "ok";
-    ok: string;
+    ok: StudentProfile;
 } | {
     __kind__: "err";
     err: string;

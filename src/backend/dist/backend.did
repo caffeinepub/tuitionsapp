@@ -52,6 +52,11 @@ service : {
    (text);
   createVoiceSession: (sessionId: text, hostUsername: text) -> ();
   endVoiceSession: (sessionId: text) -> ();
+  fetchWordPressContent: (baseUrl: text, endpoint: text) ->
+   (variant {
+      err: text;
+      ok: text;
+    });
   getAllAssignments: () -> (vec Assignment) query;
   getAllSubjects: () -> (vec Subject) query;
   getGradesByStudent: (studentId: text) -> (vec Grade) query;
@@ -61,6 +66,7 @@ service : {
           text;
           text;
         }) query;
+  getTeacherWpUrl: () -> (text) query;
   getVoiceSession: (sessionId: text) -> (opt VoiceSession) query;
   joinVoiceSession: (sessionId: text, username: text) -> ();
   listActiveVoiceSessions: () -> (vec VoiceSession) query;
@@ -78,6 +84,7 @@ service : {
     });
   sendAudioChunk: (sessionId: text, senderUsername: text, data: vec nat8) ->
    ();
+  setTeacherWpUrl: (url: text) -> ();
   setVerificationCode: (username: text, code: text) -> ();
   studentExistsInBackend: (username: text) -> (bool) query;
   studentHasVerificationCode: (username: text) -> (bool) query;

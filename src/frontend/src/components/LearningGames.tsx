@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   ChevronLeft,
   GamepadIcon,
+  Lock,
   RefreshCcw,
   Star,
   Trophy,
@@ -21,6 +22,27 @@ import {
   scrambleWord,
   shuffleArray,
 } from "../utils/learningGamesData";
+import { getStudentAge } from "../utils/studentStorage";
+
+/** Finds the age of the currently logged-in student by matching the most
+ *  recently pinged username in the online-status map against stored profiles. */
+function getCurrentStudentAge(): number | null {
+  try {
+    const raw = localStorage.getItem("tuitions_student_online_status");
+    if (!raw) return null;
+    const status: Record<string, number> = JSON.parse(raw);
+    const now = Date.now();
+    // Pick the username most recently active (within 60 s to be safe)
+    const active = Object.entries(status)
+      .filter(([, ts]) => now - ts < 60000)
+      .sort((a, b) => b[1] - a[1]);
+    if (active.length === 0) return null;
+    const username = active[0][0];
+    return getStudentAge(username);
+  } catch {
+    return null;
+  }
+}
 
 type Screen = "subjects" | "hub" | "game";
 type GameType = "mcq" | "scramble" | "memory" | "truefalse";
@@ -79,6 +101,7 @@ export function LearningGames() {
 // ─── Subject Select ──────────────────────────────────────────────────────────
 function SubjectSelectScreen({ onSelect }: { onSelect: (s: string) => void }) {
   const [openCategory, setOpenCategory] = useState<string>("core");
+  const studentAge = getCurrentStudentAge();
 
   return (
     <div className="p-5">
@@ -96,48 +119,92 @@ function SubjectSelectScreen({ onSelect }: { onSelect: (s: string) => void }) {
         </div>
       </div>
 
-      <div className="space-y-3">
-        {SUBJECT_CATEGORIES.map((cat) => (
-          <div
-            key={cat.id}
-            className="rounded-xl border border-border/60 overflow-hidden"
-          >
-            <button
-              type="button"
-              className="w-full flex items-center justify-between px-4 py-3 bg-muted/30 hover:bg-muted/50 transition-colors text-left"
-              onClick={() =>
-                setOpenCategory(openCategory === cat.id ? "" : cat.id)
-              }
-            >
-              <span className="font-display font-bold text-sm text-foreground flex items-center gap-2">
-                <span className="text-base">{cat.emoji}</span>
-                {cat.name}
-              </span>
-              <span
-                className={`text-muted-foreground transition-transform duration-200 ${
-                  openCategory === cat.id ? "rotate-180" : ""
-                }`}
-              >
-                ▾
-              </span>
-            </button>
+      {studentAge === null && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-2">
+          <Lock className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+          <p className="text-xs text-amber-700">
+            Add your date of birth in your profile to unlock age-appropriate
+            subjects.
+          </p>
+        </div>
+      )}
 
-            {openCategory === cat.id && (
-              <div className="px-4 py-3 flex flex-wrap gap-2 bg-background">
-                {cat.subjects.map((subject) => (
-                  <button
-                    type="button"
-                    key={subject}
-                    onClick={() => onSelect(subject)}
-                    className="px-3 py-1.5 text-xs font-medium rounded-lg bg-student-light text-student hover:bg-student hover:text-white transition-colors duration-150 border border-student/20"
-                  >
-                    {subject}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+      <div className="space-y-3">
+        {SUBJECT_CATEGORIES.map((cat) => {
+          const isLocked = studentAge !== null && studentAge < cat.ageMin;
+
+          return (
+            <div
+              key={cat.id}
+              className={`rounded-xl border overflow-hidden transition-opacity ${
+                isLocked ? "border-border/40 opacity-70" : "border-border/60"
+              }`}
+            >
+              <button
+                type="button"
+                className={`w-full flex items-center justify-between px-4 py-3 transition-colors text-left ${
+                  isLocked
+                    ? "bg-muted/20 cursor-default"
+                    : "bg-muted/30 hover:bg-muted/50 cursor-pointer"
+                }`}
+                onClick={() => {
+                  if (!isLocked) {
+                    setOpenCategory(openCategory === cat.id ? "" : cat.id);
+                  }
+                }}
+              >
+                <span className="font-display font-bold text-sm text-foreground flex items-center gap-2">
+                  <span className={`text-base ${isLocked ? "grayscale" : ""}`}>
+                    {cat.emoji}
+                  </span>
+                  <span className={isLocked ? "text-muted-foreground" : ""}>
+                    {cat.name}
+                  </span>
+                </span>
+                <span className="flex items-center gap-2">
+                  {isLocked ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white bg-[#1B2B50]">
+                      <Lock className="w-3 h-3" />
+                      Age {cat.ageMin}+
+                    </span>
+                  ) : (
+                    <span
+                      className={`text-muted-foreground transition-transform duration-200 ${
+                        openCategory === cat.id ? "rotate-180" : ""
+                      }`}
+                    >
+                      ▾
+                    </span>
+                  )}
+                </span>
+              </button>
+
+              {!isLocked && openCategory === cat.id && (
+                <div className="px-4 py-3 flex flex-wrap gap-2 bg-background">
+                  {cat.subjects.map((subject) => (
+                    <button
+                      type="button"
+                      key={subject}
+                      onClick={() => onSelect(subject)}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg bg-student-light text-student hover:bg-student hover:text-white transition-colors duration-150 border border-student/20"
+                    >
+                      {subject}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {isLocked && (
+                <div className="px-4 py-2.5 bg-muted/10 border-t border-border/30 flex items-center gap-1.5">
+                  <Lock className="w-3 h-3 text-muted-foreground/60" />
+                  <p className="text-[11px] text-muted-foreground/70">
+                    Available from age {cat.ageMin}
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

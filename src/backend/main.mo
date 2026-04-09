@@ -20,6 +20,22 @@ actor Main {
     userRoles = Map.empty<Principal, UserRole>();
   };
 
+  // ── IC management canister reference (HTTP outcalls) ───────────────────────
+  let IC = actor "aaaaa-aa" : actor {
+    http_request : ({
+      url : Text;
+      max_response_bytes : ?Nat64;
+      method : { #get; #head; #post };
+      headers : [{ name : Text; value : Text }];
+      body : ?Blob;
+      transform : ?{
+        function : shared query ({ response : { status : Nat; headers : [{ name : Text; value : Text }]; body : Blob }; context : Blob }) -> async { status : Nat; headers : [{ name : Text; value : Text }]; body : Blob };
+        context : Blob;
+      };
+      is_replicated : ?Bool;
+    }) -> async { status : Nat; headers : [{ name : Text; value : Text }]; body : Blob };
+  };
+
   // ── Student / auth types ───────────────────────────────────────────────────
   public type StudentProfile = {
     id : Text;
@@ -83,6 +99,11 @@ actor Main {
   var grades : [(Text, Grade)] = [];
   var nextId : Nat = 1;
   stable var verificationCodes : [(Text, Text)] = [];
+
+  // ── Teacher profile state ──────────────────────────────────────────────────
+  // Maps teacher principal (as Text) → their WordPress site URL.
+  // An empty string means not set.
+  let teacherWpUrls = Map.empty<Text, Text>();
 
   // Voice sessions — ephemeral (reset on upgrade), stored in memory only
   let voiceSessions = List.empty<VoiceSessionInternal>();
@@ -359,5 +380,54 @@ actor Main {
   public query func listActiveVoiceSessions() : async [VoiceSession] {
     let active = voiceSessions.filter(func(s : VoiceSessionInternal) : Bool { s.isActive });
     active.map<VoiceSessionInternal, VoiceSession>(func(s) { sessionToView(s) }).toArray()
+  };
+
+  // ── Teacher WordPress profile ──────────────────────────────────────────────
+
+  // Store or update the calling teacher's WordPress site URL.
+  public shared ({ caller }) func setTeacherWpUrl(url : Text) : async () {
+    teacherWpUrls.add(caller.toText(), url);
+  };
+
+  // Return the calling teacher's saved WordPress URL, or "" if not set.
+  public shared query ({ caller }) func getTeacherWpUrl() : async Text {
+    switch (teacherWpUrls.get(caller.toText())) {
+      case (?u) u;
+      case null "";
+    };
+  };
+
+  // Fetch WordPress REST API content from a public endpoint.
+  // baseUrl: e.g. "https://mysite.com"
+  // endpoint: e.g. "posts", "pages", "media"
+  // Returns the raw JSON body on success, or an error message on failure.
+  public func fetchWordPressContent(baseUrl : Text, endpoint : Text) : async { #ok : Text; #err : Text } {
+    // Strip trailing slash from baseUrl to avoid double-slash
+    let cleanBase = switch (baseUrl.stripEnd(#text "/")) {
+      case (?stripped) stripped;
+      case null baseUrl;
+    };
+    let url = cleanBase # "/wp-json/wp/v2/" # endpoint;
+    try {
+      let response = await IC.http_request({
+        url = url;
+        max_response_bytes = ?500_000 : ?Nat64;
+        method = #get;
+        headers = [{ name = "Accept"; value = "application/json" }];
+        body = null;
+        transform = null;
+        is_replicated = ?false;
+      });
+      if (response.status >= 200 and response.status < 300) {
+        switch (response.body.decodeUtf8()) {
+          case (?text) #ok(text);
+          case null #err("Failed to decode response body as UTF-8");
+        }
+      } else {
+        #err("HTTP " # debug_show(response.status))
+      }
+    } catch (e) {
+      #err("Request failed: HTTP outcall error")
+    }
   };
 };

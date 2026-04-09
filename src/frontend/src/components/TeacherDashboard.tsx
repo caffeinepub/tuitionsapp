@@ -26,6 +26,7 @@ import {
   Clock,
   Copy,
   Flag,
+  Globe,
   GraduationCap,
   Headphones,
   Megaphone,
@@ -122,6 +123,7 @@ import { StudentReportAI } from "./StudentReportAI";
 import { SupportPortal } from "./SupportPortal";
 import { TermScheduler } from "./TermScheduler";
 import { VoiceLab } from "./VoiceLab";
+import { WordPressContent } from "./WordPressContent";
 
 type Props = {
   onLogout: () => void;
@@ -129,6 +131,7 @@ type Props = {
 
 // Teacher name stored in session for this login (persisted in localStorage)
 const TEACHER_NAME_KEY = "tuitions_teacher_name";
+const TEACHER_WP_URL_KEY = "tuitions_teacher_wp_url";
 
 function getTeacherName(): string {
   return localStorage.getItem(TEACHER_NAME_KEY) ?? "";
@@ -260,6 +263,17 @@ export function TeacherDashboard({ onLogout }: Props) {
   const [reportOpen, setReportOpen] = useState(false);
   const [warningMsg, setWarningMsg] = useState<string | null>(null);
 
+  // WordPress integration state
+  const [wpUrl, setWpUrl] = useState<string>(() => {
+    const name = getTeacherName();
+    if (!name) return "";
+    return localStorage.getItem(`${TEACHER_WP_URL_KEY}_${name}`) ?? "";
+  });
+  const [wpUrlInput, setWpUrlInput] = useState<string>("");
+  const [wpSaveStatus, setWpSaveStatus] = useState<"idle" | "saved" | "error">(
+    "idle",
+  );
+
   // Refresh bookings when window gets focus (student may have booked)
   useEffect(() => {
     function refresh() {
@@ -356,6 +370,10 @@ export function TeacherDashboard({ onLogout }: Props) {
     if (teacherName) {
       registerTeacherName(teacherName, teacherName);
       setProfile(getTeacherProfile(teacherName));
+      const savedUrl =
+        localStorage.getItem(`${TEACHER_WP_URL_KEY}_${teacherName}`) ?? "";
+      setWpUrl(savedUrl);
+      setWpUrlInput(savedUrl);
     }
   }, [teacherName]);
 
@@ -495,6 +513,25 @@ export function TeacherDashboard({ onLogout }: Props) {
     deleteScheduledSession(id);
     setScheduledSessions((prev) => prev.filter((s) => s.id !== id));
     toast.success("Session removed.");
+  }
+
+  // WordPress URL save handler
+  function handleSaveWpUrl() {
+    const raw = wpUrlInput.trim();
+    if (
+      raw !== "" &&
+      !/^https?:\/\/.+/.test(raw) &&
+      !/^[\w.-]+\.\w{2,}/.test(raw)
+    ) {
+      setWpSaveStatus("error");
+      setTimeout(() => setWpSaveStatus("idle"), 3000);
+      return;
+    }
+    const name = teacherName || getTeacherName();
+    localStorage.setItem(`${TEACHER_WP_URL_KEY}_${name}`, raw);
+    setWpUrl(raw);
+    setWpSaveStatus("saved");
+    setTimeout(() => setWpSaveStatus("idle"), 2500);
   }
 
   function openGradeDialog(b: CallBooking) {
@@ -922,6 +959,18 @@ export function TeacherDashboard({ onLogout }: Props) {
             <Radio className="w-4 h-4" />
             {showVoiceLab ? "← Dashboard" : "Voice Lab"}
           </Button>
+          <Button
+            data-ocid="teacher.wordpress.nav_button"
+            variant="outline"
+            onClick={() => {
+              const el = document.getElementById("wordpress-content-section");
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+            className="font-semibold gap-2 border-blue-400/50 text-blue-700 hover:bg-blue-50"
+          >
+            <Globe className="w-4 h-4" />
+            My WordPress Content
+          </Button>
         </div>
 
         {/* Voice Lab */}
@@ -1123,6 +1172,57 @@ export function TeacherDashboard({ onLogout }: Props) {
                         >
                           <Plus className="w-3.5 h-3.5" />
                           Save Award
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-border/60" />
+
+                    {/* WordPress Site URL */}
+                    <div>
+                      <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-teacher" />
+                        WordPress Site URL
+                      </p>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Paste your WordPress site URL to display your posts,
+                        pages, and media in the "My WordPress Content" section
+                        below.
+                      </p>
+                      <div className="flex gap-2 items-start">
+                        <div className="flex-1 space-y-1">
+                          <Input
+                            data-ocid="teacher.wp_url.input"
+                            placeholder="https://yoursite.wordpress.com"
+                            value={wpUrlInput}
+                            onChange={(e) => {
+                              setWpUrlInput(e.target.value);
+                              setWpSaveStatus("idle");
+                            }}
+                            onKeyDown={(e) =>
+                              e.key === "Enter" && handleSaveWpUrl()
+                            }
+                            className="h-9 text-sm"
+                          />
+                          {wpSaveStatus === "error" && (
+                            <p className="text-xs" style={{ color: "#E8614A" }}>
+                              Please enter a valid http/https URL (e.g.
+                              https://mysite.com).
+                            </p>
+                          )}
+                          {wpSaveStatus === "saved" && (
+                            <p className="text-xs text-green-600">
+                              WordPress URL saved!
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          data-ocid="teacher.wp_url.save_button"
+                          size="sm"
+                          onClick={handleSaveWpUrl}
+                          className="bg-teacher hover:bg-teacher/90 text-white gap-1.5 h-9 flex-shrink-0"
+                        >
+                          Save
                         </Button>
                       </div>
                     </div>
@@ -2439,6 +2539,9 @@ export function TeacherDashboard({ onLogout }: Props) {
                   );
                 })()}
             </section>
+
+            {/* My WordPress Content */}
+            <WordPressContent wpUrl={wpUrl} />
           </>
         )}
       </main>
